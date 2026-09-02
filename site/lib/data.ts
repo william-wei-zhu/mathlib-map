@@ -46,7 +46,7 @@ export type HierarchyIndex = {
 export class DataUnavailableError extends Error {}
 
 /** Fetch one JSON shard from the bucket. Returns null on 404, throws on other failures. */
-export async function fetchShard<T>(path: string, revalidate = 3600): Promise<T | null> {
+export async function fetchShard<T>(path: string, revalidate = 600): Promise<T | null> {
   const url = `${DATA_BASE_URL}/${path}`;
   const res = await fetch(url, { next: { revalidate } });
   // The bucket is public-read, so a 403 can only mean the object does not exist
