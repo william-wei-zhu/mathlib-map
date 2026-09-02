@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { declHref, loogleHref, type SearchEntry } from "@/lib/atlas-data";
 import { DATA_BASE_URL } from "@/lib/site";
 import { KIND_LABEL } from "@/lib/atlas-data";
+import { track } from "@/lib/analytics";
 
 const EXAMPLES = ["Nat.exists_infinite_primes", "Real.sqrt", "IsCompact", "Polynomial.degree", "Nat.bertrand"];
 const shardCache = new Map<string, Promise<SearchEntry[]>>();
@@ -60,7 +61,10 @@ export function DeclSearch() {
       if (query.trim()) next.set("q", query.trim());
       else next.delete("q");
       const qs = next.toString();
-      if (qs !== params.toString()) router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      if (qs !== params.toString()) {
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+        if (query.trim().length >= 2) track("search_typed", { length: query.trim().length });
+      }
     }, 300);
     return () => clearTimeout(t);
   }, [query, params, pathname, router]);

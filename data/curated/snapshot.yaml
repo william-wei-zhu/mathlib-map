@@ -1,0 +1,3 @@
+# The Mathlib release the current data describes. Update together with extractor/lakefile.toml.
+mathlibTag: v4.33.0
+date: "2026-09-02"

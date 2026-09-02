@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { GITHUB_REPO_URL, INDEPENDENCE_LINE, LINKEDIN_URL, SITE_NAME } from "@/lib/site";
-import { SNAPSHOT } from "@/lib/snapshot";
+import { getSnapshot } from "@/lib/snapshot";
 
 const linkClass = "text-accent-ink underline underline-offset-4 hover:text-foreground";
 
-export function Footer() {
+export async function Footer() {
+  const snap = await getSnapshot();
   return (
     <footer className="mt-auto border-t border-border">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
@@ -24,7 +25,7 @@ export function Footer() {
               .
             </p>
             <p className="eyebrow text-muted-foreground">
-              Mathlib {SNAPSHOT.mathlibTag} · snapshot {SNAPSHOT.date}
+              Mathlib {snap.mathlibTag} · snapshot {snap.date}
             </p>
           </div>
           <nav className="flex flex-col gap-2.5">

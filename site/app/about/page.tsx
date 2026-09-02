@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { ProseSection } from "@/components/site/prose-section";
 import { GITHUB_REPO_URL, INDEPENDENCE_LINE, SITE_URL } from "@/lib/site";
-import { SNAPSHOT } from "@/lib/snapshot";
+import { getSnapshot } from "@/lib/snapshot";
+import { DATA_BASE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "About & data sources",
@@ -20,7 +21,9 @@ const SOURCES = [
   ["Our own Lean extractor", "Classes, instances, typeclass assumptions, explicit premises, axioms", "MIT"],
 ] as const;
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const snap = await getSnapshot();
+  const dl = `${DATA_BASE_URL}/downloads/${snap.mathlibTag}`;
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <p className="eyebrow text-accent-ink">About</p>
@@ -54,7 +57,7 @@ export default function AboutPage() {
       <ProseSection title="Where the data comes from">
         <p>
           Everything is derived from public data. The current snapshot describes Mathlib{" "}
-          <span className="lean">{SNAPSHOT.mathlibTag}</span> ({SNAPSHOT.date}).
+          <span className="lean">{snap.mathlibTag}</span> ({snap.date}).
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -83,11 +86,20 @@ export default function AboutPage() {
           boundary cases such as a real-analysis theorem proved in a general-topology file. Every area
           page lists its files and their codes so you can report one that is misplaced.
         </p>
+      </ProseSection>
+
+      <ProseSection title="Downloads">
         <p>
-          Derived datasets (the filtered dependency graph, citation counts, the module to subject
-          mapping, and the hierarchy graph) will be published for download here once the first
-          full pipeline run completes.
+          The derived data behind the three views, one folder per Mathlib release. Tab-separated
+          files open in any spreadsheet; the JSON files are what the site itself reads.
         </p>
+        <ul className="list-disc space-y-2 pl-6">
+          <li><a href={`${dl}/spine-edges.tsv`} className={linkClass}>spine-edges.tsv</a>: every edge of the mathematical spine (source cites target, in the statement or the proof).</li>
+          <li><a href={`${dl}/declarations.tsv`} className={linkClass}>declarations.tsv</a>: every spine declaration with kind, file, area, citation count, depth from the axioms, and axioms used.</li>
+          <li><a href={`${dl}/modules-msc.tsv`} className={linkClass}>modules-msc.tsv</a>: the subject classification of every Mathlib file.</li>
+          <li><a href={`${dl}/hierarchy-index.json`} className={linkClass}>hierarchy-index.json</a> and <a href={`${dl}/map-index.json`} className={linkClass}>map-index.json</a>: the Structures and Map data.</li>
+          <li><a href={`${dl}/README.md`} className={linkClass}>README.md</a>: columns and licenses (CC BY 4.0, except the classification, which inherits MSC2020&apos;s CC BY-NC-SA).</li>
+        </ul>
       </ProseSection>
 
       <ProseSection title="Independence">

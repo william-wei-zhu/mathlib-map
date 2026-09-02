@@ -18,6 +18,7 @@ def main() -> None:
     sub.add_parser("map", help="build the Map view data (areas, coverage, overlays) from the classification")
     sub.add_parser("atlas", help="build the Theorems view data (spine graph, ranks, node and search shards)")
     sub.add_parser("search", help="rebuild the name-search shards from out/atlas/rank.json")
+    sub.add_parser("downloads", help="rebuild the downloadable datasets and root meta without rewriting node pages")
     up = sub.add_parser("upload", help="rsync an out/ subdirectory to the public bucket")
     up.add_argument("subdir", help="e.g. hierarchy")
     up.add_argument("--dry-run", action="store_true")
@@ -58,6 +59,12 @@ def main() -> None:
         from .atlas import build as build_atlas
 
         print(json.dumps(build_atlas(), indent=1))
+    elif args.command == "downloads":
+        import json
+
+        from .atlas import build as build_atlas
+
+        print(json.dumps({k: v for k, v in build_atlas(write_pages=False).items() if k != "topCited"}, indent=1))
     elif args.command == "search":
         import json
         from pathlib import Path

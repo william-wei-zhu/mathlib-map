@@ -116,6 +116,15 @@ this file is the running changelog of decisions taken while executing it.
   results" and class pages sort "assumed by" by citations (`rank.json`). Not built yet: the `/api/graph`
   closure and path endpoints; transitive definition counts exist for the 3,000 most cited nodes only.
 
+- **2026-09-02 · Phase 4 (launch polish) done except the human steps.** Hidden `/docs` walk-through (noindex,
+  unlinked, hand-built SVG, one-shot reveals), downloads under `downloads/<tag>/` with a README and licenses
+  (About page links them), root `meta.json` read by the footer (`getSnapshot()` with a constant fallback),
+  PostHog events (`search_typed`, `map_area_zoomed`, `map_color_changed`, `hierarchy_focused`,
+  `hierarchy_type_lit`, `path_asked`; no-ops until `NEXT_PUBLIC_POSTHOG_KEY` is set), monthly GitHub Actions
+  refresh with a dry-run switch and a scoped service account (`docs/ci.md`), announcement drafts in
+  `docs/announcements.md`. Human steps left: set the PostHog key in Vercel, run the workflow once with
+  dry_run, post to Zulip.
+
 ## Data sources (verified 2026-09-02)
 
 | Key | Source | License |

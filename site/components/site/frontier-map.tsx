@@ -11,6 +11,7 @@ import { Minus, Plus, Scan } from "lucide-react";
 import { areaHref, coverage, fmt, pct, shortName, type AreaSummary, type MapIndex } from "@/lib/map-data";
 import { RAMP, fillFor, rampStep, textOn } from "@/lib/ramp";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 const W = 1200;
 const H = 720;
@@ -118,8 +119,8 @@ export function FrontierMap({ index }: { index: MapIndex }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Color the map by">
           <span className="eyebrow text-muted-foreground">Color by</span>
-          <button type="button" className={toggle(metric === "coverage")} onClick={() => setMetric("coverage")}>Famous theorems formalized</button>
-          <button type="button" className={toggle(metric === "conjectures")} onClick={() => setMetric("conjectures")}>Open conjectures stated</button>
+          <button type="button" className={toggle(metric === "coverage")} onClick={() => { setMetric("coverage"); track("map_color_changed", { metric: "coverage" }); }}>Famous theorems formalized</button>
+          <button type="button" className={toggle(metric === "conjectures")} onClick={() => { setMetric("conjectures"); track("map_color_changed", { metric: "conjectures" }); }}>Open conjectures stated</button>
         </div>
         <p className="eyebrow text-muted-foreground">Size: declarations in Mathlib</p>
       </div>
@@ -159,6 +160,7 @@ export function FrontierMap({ index }: { index: MapIndex }) {
                   onClick={() => {
                     setSelected(a.code);
                     zoomToNode(n);
+                    track("map_area_zoomed", { area: a.code });
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {

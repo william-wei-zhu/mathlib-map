@@ -155,7 +155,12 @@ def pagerank(adj: sparse.csr_matrix, damping: float = 0.85, iters: int = 60) -> 
 
 # ------------------------------------------------------------------ build
 
-def build(snapshot: dict | None = None) -> dict:
+def load_snapshot() -> dict:
+    return yaml.safe_load((ROOT.parent / "data" / "curated" / "snapshot.yaml").read_text(encoding="utf-8")) or {}
+
+
+def build(snapshot: dict | None = None, *, write_pages: bool = True) -> dict:
+    snapshot = snapshot or load_snapshot()
     names, kinds, T, V, E = load_deps()
     n = len(names)
     id_of = {nm: i for i, nm in enumerate(names)}
@@ -269,6 +274,9 @@ def build(snapshot: dict | None = None) -> dict:
     for i in spine_ids:
         nm = names[int(i)]
         r = decls[nm]
+        rank_out[nm] = [int(cited_by[i]), kinds[int(i)]]
+        if not write_pages:
+            continue
         ty, doc = types.get(nm, ("", None))
         uses = uses_of(int(i))
         usedby = used_by(int(i))
@@ -299,12 +307,59 @@ def build(snapshot: dict | None = None) -> dict:
         p.parent.mkdir(exist_ok=True)
         p.write_text(json.dumps(page, separators=(",", ":")), encoding="utf-8")
         written += 1
-        rank_out[nm] = [int(cited_by[i]), kinds[int(i)]]
         if written % 50000 == 0:
             print(f"  wrote {written:,} node pages", flush=True)
 
     (OUT / "rank.json").write_text(json.dumps(rank_out, separators=(",", ":")), encoding="utf-8")
     n_shards = build_search(rank_out)
+
+    # Downloadable derived data, one folder per snapshot.
+    tag = snapshot.get("mathlibTag", "unknown")
+    dl = ROOT / "out" / "downloads" / tag
+    dl.mkdir(parents=True, exist_ok=True)
+    coo = spine.tocoo()
+    with (dl / "spine-edges.tsv").open("w", encoding="utf-8") as f:
+        f.write("source\ttarget\tvia\n")
+        for s_, d_ in zip(coo.row, coo.col):
+            in_s = stmt_csr[s_, d_] != 0
+            in_p = proof_csr[s_, d_] != 0
+            f.write(f"{names[s_]}\t{names[d_]}\t{'both' if in_s and in_p else ('statement' if in_s else 'proof')}\n")
+    with (dl / "declarations.tsv").open("w", encoding="utf-8") as f:
+        f.write("name\tkind\tmodule\tarea\tcitedBy\tdepth\taxioms\n")
+        for i in spine_ids:
+            nm = names[int(i)]
+            r = decls[nm]
+            ar = area_of(r.get("module") or "")
+            f.write(f"{nm}\t{kinds[int(i)]}\t{r.get('module') or ''}\t{ar['code'] if ar else ''}\t{int(cited_by[i])}\t{int(depth[i])}\t{'+'.join(axioms_of(int(i)))}\n")
+    with (dl / "modules-msc.tsv").open("w", encoding="utf-8") as f:
+        f.write("module\tprimary\tsecondary\tconfidence\tsource\ttheorems\tdefinitions\n")
+        for m, rec in sorted(cls.items()):
+            f.write(f"{m}\t{rec['primary']}\t{','.join(rec.get('secondary', []))}\t{rec.get('confidence', '')}\t{rec.get('source', '')}\t{rec.get('theorems', 0)}\t{rec.get('definitions', 0)}\n")
+    for src, dst in (("hierarchy/index.json", "hierarchy-index.json"), ("map/index.json", "map-index.json")):
+        p_src = ROOT / "out" / src
+        if p_src.exists():
+            (dl / dst).write_text(p_src.read_text(encoding="utf-8"), encoding="utf-8")
+    (dl / "README.md").write_text(f"""# Mathlib Map derived data, Mathlib {tag}
+
+Generated {snapshot.get('date', '')} from Mathlib {tag} by https://mathlibmap.com (source: https://github.com/william-wei-zhu/mathlib-map).
+
+- spine-edges.tsv: one row per edge of the mathematical spine (source cites target; via = statement, proof, or both).
+- declarations.tsv: every spine declaration with kind, module, MSC area, citation count, depth from the axioms, axioms used.
+- modules-msc.tsv: the MSC2020 classification of every Mathlib module (primary code, secondary codes, confidence, source = model, rule, or override).
+- hierarchy-index.json: typeclasses, extends and forgetful-instance edges, concrete types.
+- map-index.json: per-area totals and famous-theorem coverage.
+
+License: modules-msc.tsv and the MSC-derived columns are CC BY-NC-SA 4.0 (they inherit the MSC2020 license); everything else is CC BY 4.0. Mathlib itself is Apache 2.0.
+""", encoding="utf-8")
+
+    # Root meta for the site footer and for machines.
+    root = ROOT / "out" / "root"
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "meta.json").write_text(json.dumps({
+        "snapshot": snapshot,
+        "counts": {"constants": n, "spineNodes": int(len(spine_ids)), "spineEdges": int(spine.nnz)},
+        "downloads": f"downloads/{tag}/",
+    }, indent=1), encoding="utf-8")
 
     top = sorted(((int(cited_by[i]), names[int(i)]) for i in spine_ids), reverse=True)[:25]
     axiom_dist = Counter(tuple(axioms_of(int(i))) for i in spine_ids)

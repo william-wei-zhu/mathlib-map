@@ -5,6 +5,7 @@ import Link from "next/link";
 import { classHref, mathlibDocsHref } from "@/lib/data";
 import { findPath, loadGraph, typesReaching, type Graph, type Hop } from "@/lib/hierarchy-client";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 type State =
   | { status: "loading" }
@@ -51,6 +52,7 @@ export function PathFinder({ target, initial }: { target: string; initial?: stri
         onSubmit={(e) => {
           e.preventDefault();
           setAsked(query);
+          if (query.trim()) track("path_asked", { length: query.trim().length });
         }}
       >
         <label className="sr-only" htmlFor="path-start">Type or class name</label>

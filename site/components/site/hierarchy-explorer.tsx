@@ -8,6 +8,7 @@ import { DIAGRAM_FAMILIES, FAMILY_LABELS } from "@/lib/families";
 import { ancestors, descendants, loadGraph, typeClosure, type Graph } from "@/lib/hierarchy-client";
 import { HierarchyDiagram } from "@/components/site/hierarchy-diagram";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 const DEFAULT_LIMIT = 80;
 
@@ -127,6 +128,7 @@ export function HierarchyExplorer() {
             onSubmit={(e) => {
               e.preventDefault();
               setParams({ focus: classQuery.trim() || null, all: null });
+              if (classQuery.trim()) track("hierarchy_focused", { length: classQuery.trim().length });
             }}
           >
             <label htmlFor="focus-class" className="eyebrow text-muted-foreground">Focus on a class</label>
@@ -168,6 +170,7 @@ export function HierarchyExplorer() {
             onSubmit={(e) => {
               e.preventDefault();
               setParams({ type: typeQuery.trim() || null });
+              if (typeQuery.trim()) track("hierarchy_type_lit", { length: typeQuery.trim().length });
             }}
           >
             <label htmlFor="highlight-type" className="eyebrow text-muted-foreground">Light up a concrete type</label>

@@ -55,12 +55,13 @@ def upload(subdir: str, *, max_age: int = 600, dry_run: bool = False) -> None:
     if shutil.which("gcloud") is None:
         raise SystemExit("gcloud CLI not found")
     stage = _stage(subdir)
+    # The bucket root holds meta.json next to the per-view prefixes, so never delete there.
+    delete = [] if subdir == "root" else ["--delete-unmatched-destination-objects"]
     cmd = [
-        "gcloud", "storage", "rsync", "--recursive", "--delete-unmatched-destination-objects",
+        "gcloud", "storage", "rsync", "--recursive", *delete,
         f"--cache-control=public, max-age={max_age}",
-        "--content-type=application/json",
         "--content-encoding=gzip",
-        str(stage), f"{BUCKET}/{subdir}",
+        str(stage), BUCKET if subdir == "root" else f"{BUCKET}/{subdir}",
     ]
     if dry_run:
         cmd.insert(3, "--dry-run")
