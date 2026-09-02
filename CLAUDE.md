@@ -141,6 +141,14 @@ this file is the running changelog of decisions taken while executing it.
 
 ## Status
 
+- **2026-09-02 · Atlas redesign shipped to production.** The Google-Maps interface is live on
+  mathlibmap.com: one persistent map, a left collapsible drag-resizable sidebar holding every route,
+  a top search box (areas + structures + theorems), a floating Layers control, the node-constellation
+  logo, and the World -> Region -> Theorem altitudes plus the Structures layer. Built on branch
+  `atlas-redesign`, merged to `main`. The map's spatial positions were uploaded to the bucket
+  (`mathlibmap upload map`, backward-compatible `pos` field). Still pending: the WebGL galaxy backdrop
+  of all ~300k nodes. `frontier-map.tsx`, `header.tsx`, `footer.tsx`, and `nav-links.tsx` remain in
+  the tree but are unused by the shell.
 - **2026-09-02 · Phase 0 done.** Site live at mathlibmap.com (brand, theme, header, footer, About, Privacy,
   Settings, icons and share image), pipeline fetches every input, bucket public.
 - **2026-09-02 · Phase 1 (Structures) first cut live.** Extractor run on all of Mathlib v4.33.0: 2,408 classes,
