@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { classHref, fetchShard, mathlibDocsHref, moduleDocsHref, type ClassPage } from "@/lib/data";
 import { FAMILY_LABELS } from "@/lib/families";
 import { PathFinder } from "@/components/site/path-finder";
+import { DocText } from "@/components/site/doc-text";
 
 type Params = { name: string };
 
@@ -70,7 +71,7 @@ export default async function ClassPageRoute({ params }: { params: Promise<Param
         {page.id}
       </h1>
       {page.doc ? (
-        <p className="mt-5 text-lg text-foreground">{page.doc}</p>
+        <DocText text={page.doc} className="mt-5 text-lg text-foreground" />
       ) : (
         <p className="mt-5 text-lg text-muted-foreground">This class has no docstring in Mathlib.</p>
       )}

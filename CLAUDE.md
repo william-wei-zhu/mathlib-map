@@ -54,6 +54,16 @@ this file is the running changelog of decisions taken while executing it.
   unreadable. Focus mode (ancestors + descendants of one class) is the intended way to read the diagram.
 - **2026-09-02 · The hierarchy index carries only direct instances per type** (one witnessing instance per
   class); closures are recomputed client-side, which keeps the index at 1.5 MB instead of several.
+- **2026-09-02 · Diagrams are 2D with Google-Maps-style pan and zoom, never 3D.** William asked for
+  map-like zooming and whether 3D would help; decision: d3-zoom on an SVG group (wheel and pinch zoom,
+  drag pan, plus/minus/fit buttons, `touch-none`), no 3D. Labels are the content, and in 3D they overlap,
+  foreshorten, and lose the "more general sits higher" reading (Astrolabe's 3D graph is the cautionary
+  example). The Map view reuses the same interaction.
+- **2026-09-02 · No `loading.tsx` on `/class/[name]`.** A streaming boundary sends a 200 before
+  `notFound()` can run, so unknown classes returned 200; without it the route returns a real 404.
+- **2026-09-02 · Uploads are gzipped at rest.** `mathlibmap upload` stages gzipped copies and syncs them
+  with `Content-Encoding: gzip` (`--gzip-in-flight-all` only compresses transport; `--gzip-local-all` is a
+  `cp` flag that `rsync` rejects). The 1.5 MB index travels as 215 KB.
 - **2026-09-02 · gcloud needs Python 3.12.** The system gcloud fails on Python 3.9; every gcloud call sets
   `CLOUDSDK_PYTHON=$(uv python find 3.12)`.
 
