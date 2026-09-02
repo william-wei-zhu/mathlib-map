@@ -1,0 +1,5 @@
+[Wed Sep  2 09:13:41 EDT 2026] lake update
+info: downloading https://releases.lean-lang.org/lean4/v4.33.0/lean-4.33.0-darwin_aarch64.tar.zst
+info: installing /Users/williamzhu/.elan/toolchains/leanprover--lean4---v4.33.0
+info: extractor: no previous manifest, creating one from scratch
+info: mathlib: cloning https://github.com/leanprover-community/mathlib4

@@ -1,0 +1,16 @@
+name = "extractor"
+version = "0.1.0"
+defaultTargets = ["extractor"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.33.0"
+
+[[lean_lib]]
+name = "Extractor"
+
+[[lean_exe]]
+name = "extractor"
+root = "Main"
+supportInterpreter = true
