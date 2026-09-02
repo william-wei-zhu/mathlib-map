@@ -209,7 +209,7 @@ export function AtlasShell({
           >
             <PanelLeftClose className="h-4 w-4" />
           </button>
-          <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+          <div ref={contentRef} className="@container min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
         </section>
       ) : (
         <button

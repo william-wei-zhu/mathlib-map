@@ -65,9 +65,9 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <p className="eyebrow text-accent-ink">
-        <Link href="/#map" className="underline underline-offset-4 hover:text-foreground">Map</Link> · <span className="lean">{page.code}</span>
+        <Link href="/" className="underline underline-offset-4 hover:text-foreground">Map</Link> · <span className="lean">{page.code}</span>
       </p>
-      <h1 className="mt-4 font-display text-4xl capitalize leading-tight tracking-tight text-foreground sm:text-6xl">{shortName(page)}</h1>
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl capitalize leading-tight tracking-tight text-foreground">{shortName(page)}</h1>
       <p className="eyebrow mt-3 text-muted-foreground">MSC {page.code} · {page.label}</p>
       <p className="mt-5 text-lg text-foreground">
         {fmt(page.declarations)} declarations ({fmt(page.theorems)} theorems, {fmt(page.definitions)} definitions) across {fmt(page.modules)} files.
@@ -132,7 +132,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
 
       {page.hundred.length > 0 && (
         <Section title="From the 100 theorems list" count={String(page.hundred.length)}>
-          <ul className="grid gap-1.5 sm:grid-cols-2">
+          <ul className="grid gap-1.5 @lg:grid-cols-2">
             {page.hundred.map((t) => (
               <li key={t.number}>
                 <a href={mathlibDocsHref(t.decl)} target="_blank" rel="noopener noreferrer" className={link}>{t.number}. {t.title}</a>
@@ -177,7 +177,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
 
       {page.topResults && page.topResults.length > 0 && (
         <Section title="Most cited results" count={String(page.topResults.length)} intro="Declarations in this area that other Mathlib results cite most.">
-          <ul className="grid gap-1.5 sm:grid-cols-2">
+          <ul className="grid gap-1.5 @lg:grid-cols-2">
             {page.topResults.map((r) => (
               <li key={r.name} className="flex items-baseline justify-between gap-3">
                 <Link href={declHref(r.name)} className={`lean min-w-0 break-all text-sm ${link}`}>{r.name}</Link>

@@ -2,9 +2,9 @@
 
 export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col items-start px-4 py-24 sm:px-6">
+    <div className="mx-auto flex max-w-3xl flex-col items-start px-4 py-12 sm:px-6">
       <p className="eyebrow text-accent-ink">Something went wrong</p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-5xl">
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl leading-tight tracking-tight text-foreground">
         The data for this page did not load.
       </h1>
       <p className="mt-4 text-base text-foreground">

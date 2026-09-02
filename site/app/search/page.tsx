@@ -12,7 +12,7 @@ export default function SearchPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <p className="eyebrow text-accent-ink">Theorems</p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl leading-tight tracking-tight text-foreground">
         Find a theorem and see what it rests on.
       </h1>
       <p className="mt-5 max-w-2xl text-lg text-foreground">

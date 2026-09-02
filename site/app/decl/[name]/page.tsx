@@ -67,7 +67,7 @@ export default async function DeclRoute({ params }: { params: Promise<Params> })
           </>
         )}
       </p>
-      <h1 className="lean mt-4 break-words text-3xl font-medium leading-tight tracking-tight text-foreground sm:text-5xl">{page.name}</h1>
+      <h1 className="lean mt-4 break-all text-lg @sm:text-xl @lg:text-2xl font-medium leading-tight tracking-tight text-foreground">{page.name}</h1>
 
       {page.deprecated && (
         <p className="mt-4 rounded-md border border-border bg-card p-4 text-base text-foreground">
@@ -93,7 +93,7 @@ export default async function DeclRoute({ params }: { params: Promise<Params> })
       <pre className="lean mt-6 overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-border bg-card p-4 text-sm text-foreground">{page.statement}</pre>
       {page.doc && <DocText text={page.doc} className="mt-4 text-lg text-foreground" />}
 
-      <dl className="mt-6 grid gap-x-8 gap-y-4 text-base sm:grid-cols-2">
+      <dl className="mt-6 grid gap-x-8 gap-y-4 text-base @lg:grid-cols-2">
         {page.module && (
           <div>
             <dt className="eyebrow text-muted-foreground">Defined in</dt>

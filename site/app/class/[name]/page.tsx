@@ -68,7 +68,7 @@ export default async function ClassPageRoute({ params }: { params: Promise<Param
         {" · "}
         {familyLabel}
       </p>
-      <h1 className="lean mt-4 break-words text-4xl font-medium leading-tight tracking-tight text-foreground sm:text-5xl">
+      <h1 className="lean mt-4 break-all text-lg @sm:text-xl @lg:text-2xl font-medium leading-tight tracking-tight text-foreground">
         {page.id}
       </h1>
       {page.doc ? (
@@ -76,7 +76,7 @@ export default async function ClassPageRoute({ params }: { params: Promise<Param
       ) : (
         <p className="mt-5 text-lg text-muted-foreground">This class has no docstring in Mathlib.</p>
       )}
-      <dl className="mt-6 grid gap-x-8 gap-y-3 text-base sm:grid-cols-2">
+      <dl className="mt-6 grid gap-x-8 gap-y-3 text-base @lg:grid-cols-2">
         {page.module && (
           <div>
             <dt className="eyebrow text-muted-foreground">Defined in</dt>
@@ -154,7 +154,7 @@ export default async function ClassPageRoute({ params }: { params: Promise<Param
         {page.assumedBy.count === 0 ? (
           <p className="text-base text-muted-foreground">No theorem or definition in Mathlib takes this class as a hypothesis.</p>
         ) : (
-          <ul className="grid gap-1.5 sm:grid-cols-2">
+          <ul className="grid gap-1.5 @lg:grid-cols-2">
             {page.assumedBy.sample.map((d) => (
               <li key={d}>
                 <Link href={declHref(d)} className="lean break-all text-sm text-accent-ink underline underline-offset-4 hover:text-foreground">

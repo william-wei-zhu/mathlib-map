@@ -33,7 +33,7 @@ export default async function TourRoute({ params }: { params: Promise<Params> })
       <p className="eyebrow text-accent-ink">
         <Link href="/search" className="underline underline-offset-4 hover:text-foreground">Theorems</Link> · Tour
       </p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">{tour.title}</h1>
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl leading-tight tracking-tight text-foreground">{tour.title}</h1>
       <p className="mt-5 text-lg text-foreground">{tour.lede}</p>
 
       <ol className="mt-12 space-y-10">

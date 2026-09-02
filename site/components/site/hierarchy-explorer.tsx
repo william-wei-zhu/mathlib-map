@@ -122,7 +122,7 @@ export function HierarchyExplorer() {
             );
           })}
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 @lg:grid-cols-2">
           <form
             className="relative min-w-0"
             onSubmit={(e) => {

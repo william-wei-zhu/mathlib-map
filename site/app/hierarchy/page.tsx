@@ -11,7 +11,7 @@ export default function HierarchyPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <p className="eyebrow text-accent-ink">Structures</p>
-      <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">
+      <h1 className="mt-4 max-w-3xl font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl leading-tight tracking-tight text-foreground">
         Mathlib&apos;s structures, from <span className="lean text-[0.85em]">Mul</span> to <span className="lean text-[0.85em]">Field</span>, in one diagram.
       </h1>
       <p className="mt-5 max-w-2xl text-lg text-foreground">

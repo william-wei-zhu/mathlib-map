@@ -27,7 +27,7 @@ export default async function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <p className="eyebrow text-accent-ink">About</p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl leading-tight tracking-tight text-foreground">
         A map of formal mathematics, drawn from Mathlib itself.
       </h1>
       <p className="mt-6 text-lg text-foreground">
