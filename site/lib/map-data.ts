@@ -6,7 +6,7 @@ export type AreaSummary = {
   code: string;
   label: string;
   /** Curated short name for tiles, tables, and prose; `label` is the official MSC heading. */
-  short: string;
+  short?: string;
   declarations: number;
   theorems: number;
   definitions: number;
@@ -46,13 +46,18 @@ export type MapIndex = {
 
 export type AreaPage = Omit<AreaSummary, "subareas"> & {
   subareas: (SubareaSummary & { theorems: number })[];
-  modules: { module: string; primary: string; title: string; theorems: number; definitions: number; declarations: number; confidence: number; source: string }[];
+  files: { module: string; primary: string; title: string; theorems: number; definitions: number; declarations: number; confidence: number; source: string }[];
   famous: { wikidata: string; title: string; msc: string; mathlib: boolean; lean: boolean; decls: string[]; url: string }[];
   hundred: { number: number; title: string; decl: string; module: string }[];
   conjectures: { name: string; category: "open" | "solved"; collection: string | null; url: string | null }[];
   undergrad: { chapter: string; total: number; missing: number; missingTopics: string[] }[];
   classes: { id: string; assumedBy: number; instances: number }[];
 };
+
+/** Short name with a fallback for data written before the field existed. */
+export function shortName(a: { short?: string; label: string }): string {
+  return a.short ?? a.label.split(";")[0].split(",")[0].toLowerCase();
+}
 
 export function areaHref(code: string): string {
   return `/area/${code}`;

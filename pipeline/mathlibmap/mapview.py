@@ -211,7 +211,7 @@ def build(snapshot: dict | None = None) -> dict:
         page = {
             **entry,
             "subareas": subareas,
-            "modules": mods,
+            "files": mods,
             "famous": sorted(fam, key=lambda t: (t["mathlib"], t["lean"], t["title"])),
             "hundred": sorted(hundred_by_area.get(code, []), key=lambda x: x["number"]),
             "conjectures": sorted(conj, key=lambda c: (c["category"] != "open", c["name"]))[:400],

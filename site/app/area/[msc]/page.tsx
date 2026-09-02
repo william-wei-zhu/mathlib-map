@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { classHref, fetchShard, mathlibDocsHref, moduleDocsHref } from "@/lib/data";
-import { coverage, fmt, pct, type AreaPage } from "@/lib/map-data";
+import { coverage, fmt, pct, shortName, type AreaPage } from "@/lib/map-data";
 import { GITHUB_REPO_URL } from "@/lib/site";
 import { PagedList } from "@/components/site/paged-list";
 
@@ -59,7 +59,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
       <p className="eyebrow text-accent-ink">
         <Link href="/#map" className="underline underline-offset-4 hover:text-foreground">Map</Link> · <span className="lean">{page.code}</span>
       </p>
-      <h1 className="mt-4 font-display text-4xl capitalize leading-tight tracking-tight text-foreground sm:text-6xl">{page.short}</h1>
+      <h1 className="mt-4 font-display text-4xl capitalize leading-tight tracking-tight text-foreground sm:text-6xl">{shortName(page)}</h1>
       <p className="eyebrow mt-3 text-muted-foreground">MSC {page.code} · {page.label}</p>
       <p className="mt-5 text-lg text-foreground">
         {fmt(page.declarations)} declarations ({fmt(page.theorems)} theorems, {fmt(page.definitions)} definitions) across {fmt(page.modules)} files.
@@ -181,10 +181,10 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
         </Section>
       )}
 
-      <Section title="Files" count={fmt(page.modules.length)} intro="Largest first. The code after each file is its assigned subarea.">
+      <Section title="Files" count={fmt(page.files.length)} intro="Largest first. The code after each file is its assigned subarea.">
         <PagedList
           label="Files"
-          items={page.modules.map((m) => (
+          items={page.files.map((m) => (
             <div key={m.module} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <div className="min-w-0">
                 <a href={moduleDocsHref(m.module)} target="_blank" rel="noopener noreferrer" className={`lean break-all text-sm ${link}`}>{m.module}</a>

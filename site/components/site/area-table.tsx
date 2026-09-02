@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { areaHref, coverage, fmt, pct, type AreaSummary } from "@/lib/map-data";
+import { areaHref, coverage, fmt, pct, shortName, type AreaSummary } from "@/lib/map-data";
 
 /** Ranked table of every covered area: the table view of the map and the whole map on phones. */
 export function AreaTable({ areas }: { areas: AreaSummary[] }) {
@@ -23,7 +23,7 @@ export function AreaTable({ areas }: { areas: AreaSummary[] }) {
               <tr key={a.code} className="border-t border-border">
                 <td className="py-2.5 pr-3">
                   <Link href={areaHref(a.code)} className="text-accent-ink underline underline-offset-4 hover:text-foreground">
-                    <span className="lean">{a.code}</span> {a.short}
+                    <span className="lean">{a.code}</span> {shortName(a)}
                   </Link>
                 </td>
                 <td className="py-2.5 pr-3">

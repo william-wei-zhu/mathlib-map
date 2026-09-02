@@ -8,7 +8,7 @@ import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
 import "d3-transition";
 import { Minus, Plus, Scan } from "lucide-react";
-import { areaHref, coverage, fmt, pct, type AreaSummary, type MapIndex } from "@/lib/map-data";
+import { areaHref, coverage, fmt, pct, shortName, type AreaSummary, type MapIndex } from "@/lib/map-data";
 import { RAMP, fillFor, rampStep, textOn } from "@/lib/ramp";
 import { cn } from "@/lib/utils";
 
@@ -194,7 +194,7 @@ export function FrontierMap({ index }: { index: MapIndex }) {
                     })}
                   {w > 44 && h > 26 && (
                     <text x={n.x0 + 7} y={n.y0 + 7 + fontSize} fontSize={fontSize} fontWeight={600} className={ink === "paper" ? "fill-background" : "fill-foreground"} style={{ fontFamily: "var(--font-mono)" }}>
-                      {truncate(a.short, maxChars)}
+                      {truncate(shortName(a), maxChars)}
                     </text>
                   )}
                   {w > 60 && h > 26 + fontSize * 1.6 && (
