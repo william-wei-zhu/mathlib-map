@@ -128,7 +128,10 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
   }, [width]);
 
   return (
-    <div className="relative h-dvh w-screen overflow-hidden bg-background">
+    <div
+      className="relative h-dvh w-screen overflow-hidden bg-background"
+      style={{ ["--sw" as string]: `${width}px` } as React.CSSProperties}
+    >
       {mapIndex ? (
         <AtlasCanvas
           index={mapIndex}
@@ -147,65 +150,69 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
 
       <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} />
 
-      {/* left column: logo + search, then the sidebar panel */}
-      <div
-        className="pointer-events-none absolute inset-y-3 left-3 z-20 flex max-w-[calc(100vw-1.5rem)] flex-col gap-3"
-        style={{ width }}
-      >
-        <div className="pointer-events-auto flex items-center gap-2">
-          <Link href="/" aria-label="Mathlib Map home" className="inline-flex shrink-0 rounded-[14px] text-foreground shadow-md">
-            <LogoMark className="h-11 w-11" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <SearchBox areas={mapIndex?.areas ?? []} />
-          </div>
+      {/* top: logo + search (full width on mobile, panel-width on desktop) */}
+      <div className="pointer-events-none absolute left-3 right-16 top-3 z-30 flex items-center gap-2 sm:right-auto sm:w-[var(--sw)] sm:max-w-[calc(100vw-1.5rem)]">
+        <Link href="/" aria-label="Mathlib Map home" className="pointer-events-auto inline-flex shrink-0 rounded-[14px] text-foreground shadow-md">
+          <LogoMark className="h-11 w-11" />
+        </Link>
+        <div className="pointer-events-auto min-w-0 flex-1">
+          <SearchBox areas={mapIndex?.areas ?? []} />
         </div>
-
-        {open ? (
-          <section className="pointer-events-auto relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-            <button
-              type="button"
-              onClick={() => { setOpen(false); track("sidebar_toggled", { open: false }); }}
-              aria-label="Collapse panel"
-              className="absolute right-2.5 top-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-card/70 text-muted-foreground backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-            <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
-          </section>
-        ) : (
-          <button
-            type="button"
-            onClick={() => { setOpen(true); track("sidebar_toggled", { open: true }); }}
-            className="pointer-events-auto inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md transition-colors hover:border-foreground"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-            {isHome ? "Explore areas" : "Show panel"}
-          </button>
-        )}
-
-        {/* drag-to-resize handle at the column's right edge, above the map */}
-        {open && (
-          <div
-            onPointerDown={startResize}
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize panel"
-            className="group pointer-events-auto absolute bottom-0 right-0 top-[3.75rem] z-30 w-4 translate-x-1/2 cursor-col-resize"
-          >
-            <div className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded bg-transparent transition-colors group-hover:bg-accent-ink/50" />
-          </div>
-        )}
       </div>
 
-      {/* right column: menu + layers */}
-      <div className="pointer-events-none absolute right-3 top-3 z-20 flex flex-col items-end gap-3">
-        <div className="pointer-events-auto">
-          <InfoMenu />
+      {/* menu (top-right, both breakpoints) */}
+      <div className="absolute right-3 top-3 z-40">
+        <InfoMenu />
+      </div>
+
+      {/* panel: left card on desktop, bottom sheet on mobile */}
+      {open ? (
+        <section
+          className="pointer-events-auto absolute z-20 flex flex-col overflow-hidden border border-border bg-card shadow-xl
+            max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:h-[68vh] max-sm:rounded-t-2xl
+            sm:left-3 sm:right-auto sm:top-[4.5rem] sm:bottom-3 sm:w-[var(--sw)] sm:rounded-2xl"
+        >
+          <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => { setOpen(false); track("sidebar_toggled", { open: false }); }}
+            aria-label="Collapse panel"
+            className="absolute right-2.5 top-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-card/70 text-muted-foreground backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+          <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+        </section>
+      ) : (
+        <button
+          type="button"
+          onClick={() => { setOpen(true); track("sidebar_toggled", { open: true }); }}
+          className="pointer-events-auto absolute z-20 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md transition-colors hover:border-foreground
+            max-sm:bottom-5 max-sm:left-1/2 max-sm:-translate-x-1/2
+            sm:left-3 sm:top-[4.5rem]"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+          {isHome ? "Explore areas" : "Show panel"}
+        </button>
+      )}
+
+      {/* drag-to-resize handle at the panel's right edge (desktop only) */}
+      {open && (
+        <div
+          onPointerDown={startResize}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize panel"
+          className="group pointer-events-auto absolute z-30 hidden w-4 -translate-x-1/2 cursor-col-resize sm:block"
+          style={{ left: width + 12, top: "4.5rem", bottom: "0.75rem" }}
+        >
+          <div className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded bg-transparent transition-colors group-hover:bg-accent-ink/50" />
         </div>
-        <div className="pointer-events-auto">
-          <LayersControl metric={metric} onMetric={setMetric} />
-        </div>
+      )}
+
+      {/* layers: small collapsible control, grouped with the map controls at bottom-right */}
+      <div className="pointer-events-auto absolute bottom-5 right-5 z-30 sm:bottom-[10.5rem]">
+        <LayersControl metric={metric} onMetric={setMetric} />
       </div>
     </div>
   );

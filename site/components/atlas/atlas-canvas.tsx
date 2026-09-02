@@ -280,7 +280,7 @@ export function AtlasCanvas({
         </g>
       </svg>
 
-      <div className="absolute bottom-5 right-5 flex flex-col gap-2">
+      <div className="absolute bottom-5 right-5 hidden flex-col gap-2 sm:flex">
         <button type="button" onClick={() => zoomBy(1.6)} aria-label="Zoom in" title="Zoom in" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Plus className="h-5 w-5" /></button>
         <button type="button" onClick={() => zoomBy(1 / 1.6)} aria-label="Zoom out" title="Zoom out" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Minus className="h-5 w-5" /></button>
         <button type="button" onClick={reset} aria-label="Reset view" title="Reset view" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Scan className="h-4 w-4" /></button>

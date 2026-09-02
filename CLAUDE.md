@@ -141,6 +141,14 @@ this file is the running changelog of decisions taken while executing it.
 
 ## Status
 
+- **2026-09-02 · Mobile-friendly + collapsible Layers.** The Layers control is now a small
+  collapsible icon (Google-Maps style) grouped with the map controls at bottom-right, opening a
+  popover, instead of an always-open top-right panel (`layers-control.tsx`). The shell is responsive
+  (`atlas-shell.tsx`): a top search bar (full width on phones), the panel is a left card on desktop
+  and a bottom sheet on phones (`max-sm:` bottom-anchored with a grab handle; `sm:` left card sized
+  by `--sw`), the collapsed "Explore/Show panel" button sits bottom-centre on phones and top-left on
+  desktop, and the map's zoom buttons are hidden on phones (pinch). Breakpoint is Tailwind `sm`
+  (640px); verified by temporarily testing at `md` since the desktop window would not shrink below 640.
 - **2026-09-02 · Atlas redesign shipped to production.** The Google-Maps interface is live on
   mathlibmap.com: one persistent map, a left collapsible drag-resizable sidebar holding every route,
   a top search box (areas + structures + theorems), a floating Layers control, the node-constellation
