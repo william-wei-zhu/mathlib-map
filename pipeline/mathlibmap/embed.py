@@ -109,13 +109,15 @@ def _spectral(W: np.ndarray) -> np.ndarray:
     return xy
 
 
-def _fr(pos: np.ndarray, W: np.ndarray, radii: np.ndarray, iters: int = 500) -> np.ndarray:
+def _fr(pos: np.ndarray, W: np.ndarray, radii: np.ndarray, iters: int = 550, gravity: float = 0.05) -> np.ndarray:
     """Weighted Fruchterman-Reingold, seeded by the spectral positions: repulsion between every
-    pair spreads the areas to fill the space; attraction along weighted cross-area citation edges
-    pulls related areas together. Fills the viewBox evenly instead of leaving a central clump.
+    pair spreads the areas; attraction along weighted cross-area citation edges pulls related areas
+    together; a gravity pull toward the centre keeps weakly-connected areas from stranding off on
+    their own. Fills the viewBox evenly with no isolated outliers.
     """
     pos = pos.astype(np.float64).copy()
     k = len(pos)
+    center = np.array([VIEW_W / 2, VIEW_H / 2])
     K = 0.85 * math.sqrt(VIEW_W * VIEW_H / k)  # ideal edge length
     Wn = W / (W.max() or 1.0)
     temp = VIEW_W * 0.12
@@ -134,6 +136,7 @@ def _fr(pos: np.ndarray, W: np.ndarray, radii: np.ndarray, iters: int = 500) -> 
         d = np.hypot(disp[:, 0], disp[:, 1])
         d[d == 0] = 1.0
         pos += disp / d[:, None] * np.minimum(d, temp)[:, None]
+        pos += (center - pos) * gravity               # gravity keeps the layout compact
         pos[:, 0] = np.clip(pos[:, 0], radii + 4.0, VIEW_W - radii - 4.0)
         pos[:, 1] = np.clip(pos[:, 1], radii + 4.0, VIEW_H - radii - 4.0)
         temp *= 0.985
@@ -193,20 +196,18 @@ def compute_positions(size_by_code: dict[str, int]) -> dict[str, list[float]]:
         VIEW_W / 2 + xy[:, 0] * (VIEW_W / 2 - maxr - MARGIN),
         VIEW_H / 2 + xy[:, 1] * (VIEW_H / 2 - maxr - MARGIN),
     ])
-    # Force layout spreads the areas to fill the space while keeping related ones together.
+    # Force layout (with gravity) keeps the areas compact and related ones together, no strays.
     pos = _fr(pos, Wk, radii)
 
-    # Stretch per axis to fill the viewBox, then a collision pass to guarantee no overlaps.
+    # Isotropic fit to the viewBox (no per-axis distortion, so nothing gets stretched into a
+    # stray), then a collision pass to guarantee no overlaps.
     lo = pos.min(0)
     hi = pos.max(0)
-    bounds = np.array([VIEW_W, VIEW_H])
-    for d in (0, 1):
-        span = hi[d] - lo[d]
-        if span < 1e-6:
-            continue
-        lo_t = maxr + MARGIN
-        hi_t = bounds[d] - maxr - MARGIN
-        pos[:, d] = lo_t + (pos[:, d] - lo[d]) / span * (hi_t - lo_t)
+    c = (lo + hi) / 2
+    sx = (VIEW_W - 2 * MARGIN) / max(hi[0] - lo[0] + 2 * maxr, 1e-6)
+    sy = (VIEW_H - 2 * MARGIN) / max(hi[1] - lo[1] + 2 * maxr, 1e-6)
+    scale = min(sx, sy, 1.6)
+    pos = (pos - c) * scale + np.array([VIEW_W / 2, VIEW_H / 2])
     pos = _layout(pos, radii, iters=300)
 
     out: dict[str, list[float]] = {}

@@ -22,8 +22,18 @@ function metricValue(a: AreaSummary, metric: Metric, maxConj: number): number | 
   return maxConj > 0 ? Math.sqrt(a.conjectures_open / maxConj) : null;
 }
 
-function truncate(label: string, maxChars: number): string {
-  return label.length <= maxChars ? label : label.slice(0, Math.max(1, maxChars - 1)) + "…";
+/** Word-wrap a label into lines of at most maxChars, never truncating (a long word overflows). */
+function wrapLabel(text: string, maxChars: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    if (!cur) cur = w;
+    else if ((cur + " " + w).length <= maxChars) cur = cur + " " + w;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 function blobPath(cx: number, cy: number, r: number, seed: number): string {
@@ -175,7 +185,13 @@ export function AtlasCanvas({
             const inkStroke = ink === "paper" ? "var(--background)" : "var(--foreground)";
             const isSel = focusCode === a.code;
             const dim = !!focusCode && !isSel;
-            const nameSize = Math.max(13, p.r * 0.2);
+            const nameSize = Math.max(11, Math.min(p.r * 0.24, 21));
+            const maxChars = Math.max(6, Math.floor((p.r * 1.75) / (nameSize * 0.5)));
+            const lines = wrapLabel(shortName(a), maxChars);
+            const lineH = nameSize * 1.02;
+            const showCount = p.r > 34;
+            const blockH = lines.length * lineH + (showCount ? nameSize * 0.9 : 0);
+            const startY = p.y - blockH / 2 + nameSize * 0.82;
             const seed = i * 1.3 + 0.4;
             const subs = isSel ? a.subareas.filter((s) => s.declarations > 0).slice(0, 6) : [];
             return (
@@ -213,18 +229,18 @@ export function AtlasCanvas({
                   const sy = p.y + Math.sin(ang) * rad;
                   return (
                     <text key={s.code} x={sx} y={sy} textAnchor={Math.cos(ang) < 0 ? "end" : "start"} fontSize={9 / scale} fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
-                      {truncate(`${s.code} ${s.label}`, 24)}
+                      {`${s.code} ${s.label}`}
                     </text>
                   );
                 })}
 
-                {p.r > 26 && (
-                  <text x={p.x} y={p.y - 2} textAnchor="middle" fontWeight={600} fontSize={nameSize} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
-                    {truncate(shortName(a), Math.floor((p.r * 2 - 8) / (nameSize * 0.5)))}
+                {lines.map((ln, li) => (
+                  <text key={li} x={p.x} y={startY + li * lineH} textAnchor="middle" fontWeight={600} fontSize={nameSize} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                    {ln}
                   </text>
-                )}
-                {p.r > 38 && (
-                  <text x={p.x} y={p.y + nameSize} textAnchor="middle" fontSize={nameSize * 0.6} className={inkVar} style={{ fontFamily: "var(--font-mono)", opacity: 0.85 }}>
+                ))}
+                {showCount && (
+                  <text x={p.x} y={startY + lines.length * lineH + nameSize * 0.1} textAnchor="middle" fontSize={nameSize * 0.6} className={inkVar} style={{ fontFamily: "var(--font-mono)", opacity: 0.85 }}>
                     {fmt(a.declarations)}
                   </text>
                 )}
