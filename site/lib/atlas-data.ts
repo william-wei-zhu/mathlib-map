@@ -62,6 +62,29 @@ export type NodePage = {
 
 export type SearchEntry = [name: string, kind: string, citedBy: number];
 
+/** Split a query into lowercased tokens the way the search index splits names (whitespace/dot/_). */
+export function searchTokens(q: string): string[] {
+  return q.toLowerCase().split(/[\s._]+/).filter(Boolean);
+}
+
+/** The prefix shard a query maps to: first two chars of its last token, or null if too short. */
+export function searchShardKey(q: string): string | null {
+  const tokens = searchTokens(q);
+  const last = tokens[tokens.length - 1];
+  if (!last || last.length < 2) return null;
+  const k = last.slice(0, 2);
+  return /^[a-z0-9]{2}$/.test(k) ? k : null;
+}
+
+/** Filter a prefix shard to the entries matching every query token, most cited first. */
+export function filterSearchEntries(entries: SearchEntry[], q: string, limit: number): SearchEntry[] {
+  const tokens = searchTokens(q);
+  return entries
+    .filter(([name]) => { const l = name.toLowerCase(); return tokens.every((t) => l.includes(t)); })
+    .sort((a, b) => b[2] - a[2])
+    .slice(0, limit);
+}
+
 /** Percent-encode exactly like Python's urllib.parse.quote(name, safe=""). */
 export function pyQuote(s: string): string {
   return encodeURIComponent(s).replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());

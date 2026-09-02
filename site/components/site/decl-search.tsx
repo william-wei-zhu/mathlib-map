@@ -1,60 +1,45 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { declHref, loogleHref, type SearchEntry } from "@/lib/atlas-data";
-import { DATA_BASE_URL } from "@/lib/site";
-import { KIND_LABEL } from "@/lib/atlas-data";
+import { declHref, loogleHref, KIND_LABEL, type SearchEntry } from "@/lib/atlas-data";
 import { track } from "@/lib/analytics";
+import type { SearchResponse } from "@/app/api/search/route";
 
 const EXAMPLES = ["Nat.exists_infinite_primes", "Real.sqrt", "IsCompact", "Polynomial.degree", "Nat.bertrand"];
-const shardCache = new Map<string, Promise<SearchEntry[]>>();
-
-function shardKey(q: string): string | null {
-  // Words are split like the index: on whitespace, dots, and underscores.
-  const tokens = q.toLowerCase().split(/[\s._]+/).filter(Boolean);
-  const last = tokens[tokens.length - 1];
-  if (!last || last.length < 2) return null;
-  const k = last.slice(0, 2);
-  return /^[a-z0-9]{2}$/.test(k) ? k : null;
-}
-
-function loadShard(k: string): Promise<SearchEntry[]> {
-  if (!shardCache.has(k)) {
-    shardCache.set(
-      k,
-      fetch(`${DATA_BASE_URL}/atlas/search/${k}.json`).then((r) => (r.ok ? (r.json() as Promise<SearchEntry[]>) : r.status === 404 ? [] : Promise.reject(new Error(String(r.status))))),
-    );
-  }
-  return shardCache.get(k)!;
-}
 
 export function DeclSearch() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const initial = params.get("q") ?? "";
-  const [query, setQuery] = useState(initial);
-  // The loaded shard is keyed by the query's shard key, so a stale shard is ignored on the next
-  // render instead of being reset inside the effect.
-  const [loaded, setLoaded] = useState<{ key: string; entries: SearchEntry[] | null; error: boolean } | null>(null);
-  const key = shardKey(query);
-  const current = loaded && key && loaded.key === key ? loaded : null;
-  const entries = current?.entries ?? null;
-  const status: "idle" | "loading" | "error" = current?.error ? "error" : key && !current ? "loading" : "idle";
+  const [query, setQuery] = useState(params.get("q") ?? "");
+  const [results, setResults] = useState<SearchEntry[]>([]);
+  const [status, setStatus] = useState<"idle" | "loading" | "error" | "short">("idle");
+  const reqId = useRef(0);
 
+  // Fetch matches from the server (it filters the multi-MB shard; the client never downloads it).
   useEffect(() => {
-    if (!key) return;
-    let alive = true;
-    loadShard(key)
-      .then((e) => alive && setLoaded({ key, entries: e, error: false }))
-      .catch(() => alive && setLoaded({ key, entries: null, error: true }));
-    return () => {
-      alive = false;
-    };
-  }, [key]);
+    const q = query.trim();
+    if (q.length < 2) { setResults([]); setStatus(q.length ? "short" : "idle"); return; }
+    const id = ++reqId.current;
+    setStatus("loading");
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=60`);
+        if (!res.ok) throw new Error(String(res.status));
+        const data = (await res.json()) as SearchResponse;
+        if (id !== reqId.current) return;
+        setResults(data.theorems ?? []);
+        setStatus("idle");
+      } catch {
+        if (id === reqId.current) setStatus("error");
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query]);
 
+  // Keep ?q= in the URL so a search is shareable and survives reload.
   useEffect(() => {
     const t = setTimeout(() => {
       const next = new URLSearchParams(params.toString());
@@ -69,15 +54,6 @@ export function DeclSearch() {
     return () => clearTimeout(t);
   }, [query, params, pathname, router]);
 
-  const results = useMemo(() => {
-    if (!entries || !query.trim()) return [];
-    const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
-    return entries.filter(([name]) => {
-      const lower = name.toLowerCase();
-      return tokens.every((t) => lower.includes(t));
-    }).slice(0, 60);
-  }, [entries, query]);
-
   return (
     <div>
       <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
@@ -89,7 +65,6 @@ export function DeclSearch() {
           placeholder="Part of a name, e.g. infinite primes or Real.sqrt"
           spellCheck={false}
           autoCapitalize="off"
-          autoFocus
           className="lean h-12 w-0 min-w-0 flex-1 rounded-full border border-input bg-card px-5 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </form>
@@ -104,11 +79,11 @@ export function DeclSearch() {
       <div className="mt-8">
         {status === "error" ? (
           <p className="text-base text-foreground">The search index could not be loaded. Reload the page to try again.</p>
-        ) : !query.trim() ? (
+        ) : status === "idle" && !query.trim() ? (
           <p className="text-base text-muted-foreground">Type part of a declaration name. Matching is case-insensitive and every word must appear.</p>
-        ) : !key ? (
+        ) : status === "short" ? (
           <p className="text-base text-muted-foreground">Keep typing: at least two letters of a name part are needed.</p>
-        ) : status === "loading" && !entries ? (
+        ) : status === "loading" ? (
           <p className="eyebrow text-muted-foreground">Loading…</p>
         ) : results.length === 0 ? (
           <p className="text-base text-foreground">

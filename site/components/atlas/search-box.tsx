@@ -1,66 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
-import { DATA_BASE_URL } from "@/lib/site";
 import { areaHref, shortName, type AreaSummary } from "@/lib/map-data";
-import { classHref, type HierarchyIndex } from "@/lib/data";
-import { declHref, KIND_LABEL, type SearchEntry } from "@/lib/atlas-data";
+import { classHref } from "@/lib/data";
+import { declHref, KIND_LABEL } from "@/lib/atlas-data";
+import { useDismiss } from "@/lib/use-dismiss";
 import { track } from "@/lib/analytics";
+import type { SearchResponse } from "@/app/api/search/route";
 
 type Result =
   | { kind: "area"; label: string; sub: string; href: string }
   | { kind: "structure"; label: string; sub: string; href: string }
   | { kind: "theorem"; label: string; sub: string; href: string };
 
-const shardCache = new Map<string, SearchEntry[]>();
-let classCache: HierarchyIndex["classes"] | null = null;
-
-function shardKey(q: string): string | null {
-  const tokens = q.toLowerCase().split(/[\s._]+/).filter(Boolean);
-  const last = tokens[tokens.length - 1];
-  if (!last || last.length < 2) return null;
-  const k = last.slice(0, 2);
-  return /^[a-z0-9]{2}$/.test(k) ? k : null;
-}
-
-async function declResults(q: string): Promise<Result[]> {
-  const k = shardKey(q);
-  if (!k) return [];
-  let entries = shardCache.get(k);
-  if (!entries) {
-    try {
-      const res = await fetch(`${DATA_BASE_URL}/atlas/search/${k}.json`);
-      entries = res.ok ? ((await res.json()) as SearchEntry[]) : [];
-    } catch {
-      entries = [];
-    }
-    shardCache.set(k, entries);
+async function apiResults(q: string): Promise<Result[]> {
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=8`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as SearchResponse;
+    const structures: Result[] = (data.structures ?? []).map((c) => ({
+      kind: "structure",
+      label: c.id,
+      sub: `Type class · ${c.family} · assumed by ${c.assumedBy.toLocaleString()}`,
+      href: classHref(c.id),
+    }));
+    const theorems: Result[] = (data.theorems ?? []).map(([name, kind, cited]) => ({
+      kind: "theorem",
+      label: name,
+      sub: `${KIND_LABEL[kind] ?? "Declaration"} · cited by ${cited.toLocaleString()}`,
+      href: declHref(name),
+    }));
+    return [...structures, ...theorems];
+  } catch {
+    return [];
   }
-  const tokens = q.toLowerCase().split(/[\s._]+/).filter(Boolean);
-  return entries
-    .filter(([name]) => { const l = name.toLowerCase(); return tokens.every((t) => l.includes(t)); })
-    .sort((a, b) => b[2] - a[2])
-    .slice(0, 8)
-    .map(([name, kind, cited]) => ({ kind: "theorem" as const, label: name, sub: `${KIND_LABEL[kind] ?? "Declaration"} · cited by ${cited.toLocaleString()}`, href: declHref(name) }));
-}
-
-async function classResults(q: string): Promise<Result[]> {
-  if (!classCache) {
-    try {
-      const res = await fetch(`${DATA_BASE_URL}/hierarchy/index.json`);
-      classCache = res.ok ? ((await res.json()) as HierarchyIndex).classes : [];
-    } catch {
-      classCache = [];
-    }
-  }
-  const l = q.toLowerCase();
-  return classCache
-    .filter((c) => !c.hidden && c.id.toLowerCase().includes(l))
-    .sort((a, b) => b.assumedBy - a.assumedBy)
-    .slice(0, 6)
-    .map((c) => ({ kind: "structure" as const, label: c.id, sub: `Type class · ${c.family} · assumed by ${c.assumedBy.toLocaleString()}`, href: classHref(c.id) }));
 }
 
 export function SearchBox({ areas }: { areas: AreaSummary[] }) {
@@ -68,7 +43,11 @@ export function SearchBox({ areas }: { areas: AreaSummary[] }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<Result[]>([]);
+  const [active, setActive] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(boxRef, open, close);
 
   const areaResults = useMemo<Result[]>(() => {
     const l = q.trim().toLowerCase();
@@ -82,21 +61,28 @@ export function SearchBox({ areas }: { areas: AreaSummary[] }) {
 
   useEffect(() => {
     const query = q.trim();
-    if (query.length < 2) { setResults([]); return; }
+    if (query.length < 2) { setResults([]); setActive(-1); return; }
     let alive = true;
     const t = setTimeout(async () => {
-      const [decls, classes] = await Promise.all([declResults(query), classResults(query)]);
-      if (alive) setResults([...areaResults, ...classes, ...decls]);
+      const rest = await apiResults(query);
+      if (alive) { setResults([...areaResults, ...rest]); setActive(-1); }
     }, 180);
     return () => { alive = false; clearTimeout(t); };
   }, [q, areaResults]);
 
+  // Focus search from anywhere with "/" (unless the user is already typing in a field).
   useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+      setOpen(true);
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   const go = (r: Result) => {
@@ -106,6 +92,13 @@ export function SearchBox({ areas }: { areas: AreaSummary[] }) {
     router.push(r.href);
   };
 
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setOpen(true); setActive((i) => Math.min(results.length - 1, i + 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(-1, i - 1)); }
+    else if (e.key === "Enter") { const pick = results[active] ?? results[0]; if (pick) go(pick); }
+    else if (e.key === "Escape") { setOpen(false); }
+  };
+
   const badge = { area: "Area", structure: "Structure", theorem: "Theorem" } as const;
 
   return (
@@ -113,17 +106,18 @@ export function SearchBox({ areas }: { areas: AreaSummary[] }) {
       <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 shadow-md">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
+          ref={inputRef}
           value={q}
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          onKeyDown={(e) => { if (e.key === "Enter" && results[0]) go(results[0]); if (e.key === "Escape") setOpen(false); }}
+          onKeyDown={onKeyDown}
           placeholder="Search areas, structures, theorems"
           className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           aria-label="Search"
           spellCheck={false}
         />
         {q && (
-          <button type="button" onClick={() => { setQ(""); setResults([]); }} aria-label="Clear" className="text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={() => { setQ(""); setResults([]); inputRef.current?.focus(); }} aria-label="Clear" className="text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -134,9 +128,14 @@ export function SearchBox({ areas }: { areas: AreaSummary[] }) {
           {results.length === 0 ? (
             <li className="px-3 py-3 text-sm text-muted-foreground">No matches yet. Keep typing.</li>
           ) : (
-            results.map((r) => (
+            results.map((r, i) => (
               <li key={`${r.kind}:${r.href}`}>
-                <button type="button" onClick={() => go(r)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-muted">
+                <button
+                  type="button"
+                  onClick={() => go(r)}
+                  onMouseEnter={() => setActive(i)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${i === active ? "bg-muted" : "hover:bg-muted"}`}
+                >
                   <span className="eyebrow shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{badge[r.kind]}</span>
                   <span className="min-w-0 flex-1">
                     <span className={`block truncate text-sm text-foreground ${r.kind === "area" ? "" : "lean"}`}>{r.label}</span>
