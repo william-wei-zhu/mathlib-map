@@ -1,0 +1,4 @@
+# Hand overrides for the module -> MSC2020 classification. A module listed here wins over the model.
+# Keys are Mathlib module names; values are 3-character MSC codes (e.g. 11A) or NONE (not mathematics).
+# Add an entry when an area page shows a misclassified file (the page has a report link).
+Mathlib.Deprecated.Aliases: NONE

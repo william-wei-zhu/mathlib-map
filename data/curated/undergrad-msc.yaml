@@ -1,0 +1,15 @@
+# Which MSC2020 area each chapter of Mathlib's docs/undergrad.yaml belongs to.
+# Chapters follow the French agrégation syllabus; codes are 2-digit MSC areas.
+Linear algebra: "15"
+Group Theory: "20"
+Ring Theory: "13"
+Bilinear and Quadratic Forms Over a Vector Space: "15"
+Affine and Euclidean Geometry: "51"
+Single Variable Real Analysis: "26"
+Single Variable Complex Analysis: "30"
+Topology: "54"
+Multivariable calculus: "26"
+Measures and integral calculus: "28"
+Probability Theory: "60"
+Distribution calculus: "46"
+Numerical Analysis: "65"

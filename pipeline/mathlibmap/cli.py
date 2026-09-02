@@ -13,6 +13,9 @@ def main() -> None:
     sub.add_parser("report", help="print headline counts from the cache")
     h = sub.add_parser("hierarchy", help="build the Structures view data from the extractor output")
     h.add_argument("--src", default=None, help="extractor NDJSON (default: cache/extract/mathlib.ndjson)")
+    cl = sub.add_parser("classify", help="classify Mathlib modules into MSC2020 areas with Gemini (cached)")
+    cl.add_argument("--limit", type=int, default=None, help="only classify this many uncached modules (for a test run)")
+    sub.add_parser("map", help="build the Map view data (areas, coverage, overlays) from the classification")
     up = sub.add_parser("upload", help="rsync an out/ subdirectory to the public bucket")
     up.add_argument("subdir", help="e.g. hierarchy")
     up.add_argument("--dry-run", action="store_true")
@@ -34,6 +37,19 @@ def main() -> None:
 
         src = Path(args.src) if args.src else Path(__file__).resolve().parent.parent / "cache" / "extract" / "mathlib.ndjson"
         print(json.dumps(build(src), indent=1))
+    elif args.command == "classify":
+        from pathlib import Path
+
+        from .fetch import CACHE
+        from .msc import classify_all
+
+        classify_all(CACHE / "extract" / "mathlib.ndjson", limit=args.limit)
+    elif args.command == "map":
+        import json
+
+        from .mapview import build as build_map
+
+        print(json.dumps(build_map(), indent=1))
     elif args.command == "upload":
         from .upload import upload
 
