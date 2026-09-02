@@ -85,9 +85,9 @@ export function AtlasShell({
   useEffect(() => {
     const was = prevPath.current;
     prevPath.current = pathname;
+    // Sync the panel to the route: collapse on home, open when diving in from the map, otherwise
+    // keep the user's manual choice (null = no change).
     const next = pathname === "/" ? false : was === null || was === "/" ? true : null;
-    // Syncing panel state to route changes is exactly what this effect is for.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (next !== null) setOpen(next);
   }, [pathname]);
 
@@ -176,6 +176,7 @@ export function AtlasShell({
           activeNode={activeNode}
           onPick={(code) => router.push(areaHref(code))}
           onNode={(name) => router.push(declHref(name))}
+          onExitFocus={() => router.push("/")}
         />
       ) : (
         <div className="absolute inset-0 grid place-items-center p-8 text-center text-muted-foreground">

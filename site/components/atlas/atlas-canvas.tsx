@@ -82,6 +82,7 @@ export function AtlasCanvas({
   activeNode,
   onPick,
   onNode,
+  onExitFocus,
 }: {
   index: MapIndex;
   metric: Metric;
@@ -90,6 +91,8 @@ export function AtlasCanvas({
   activeNode?: string | null;
   onPick?: (code: string) => void;
   onNode?: (name: string) => void;
+  /** Return to the world view (up one altitude) when the user zooms out of a focused region. */
+  onExitFocus?: () => void;
 }) {
   const { resolvedTheme } = useTheme();
   const mode: "light" | "dark" = resolvedTheme === "dark" ? "dark" : "light";
@@ -98,6 +101,12 @@ export function AtlasCanvas({
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  // Latest focus/exit for the zoom handler, which is installed once. `exiting` debounces the
+  // exit so a continuous wheel-out fires the route change only once.
+  const focusRef = useRef<string | null | undefined>(focusCode);
+  const exitRef = useRef<(() => void) | undefined>(onExitFocus);
+  const exitingRef = useRef(false);
+  useEffect(() => { focusRef.current = focusCode; exitRef.current = onExitFocus; });
 
   const areas = useMemo(() => index.areas.filter((a) => a.declarations > 0), [index]);
   const maxConj = useMemo(() => Math.max(0, ...areas.map((a) => a.conjectures_open)), [areas]);
@@ -135,6 +144,12 @@ export function AtlasCanvas({
       .on("zoom", (ev) => {
         g.attr("transform", ev.transform.toString());
         setScale(ev.transform.k);
+        // Zooming out of a focused region past ~the world scale returns to the world (higher level).
+        // Only user gestures have a sourceEvent, so the programmatic fly-in/reset never triggers it.
+        if (ev.sourceEvent && focusRef.current && !exitingRef.current && ev.transform.k < 1.25) {
+          exitingRef.current = true;
+          exitRef.current?.();
+        }
       });
     const sel = select(svgEl);
     sel.call(z);
@@ -169,6 +184,7 @@ export function AtlasCanvas({
 
   // React to the route: fly to the focused area, or reset when there is none.
   useEffect(() => {
+    exitingRef.current = false; // a new focus (or the world) re-arms the zoom-out-to-exit gesture
     if (!focusCode) {
       reset();
       return;
@@ -295,7 +311,15 @@ export function AtlasCanvas({
       <div className="absolute right-3 top-[4.5rem] z-30 flex flex-col gap-2 sm:right-5 sm:top-auto sm:bottom-5">
         <button type="button" onClick={() => zoomBy(1.6)} aria-label="Zoom in" title="Zoom in" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Plus className="h-5 w-5" /></button>
         <button type="button" onClick={() => zoomBy(1 / 1.6)} aria-label="Zoom out" title="Zoom out" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Minus className="h-5 w-5" /></button>
-        <button type="button" onClick={reset} aria-label="Reset view" title="Reset view" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Scan className="h-4 w-4" /></button>
+        <button
+          type="button"
+          onClick={() => (focusCode ? onExitFocus?.() : reset())}
+          aria-label={focusCode ? "Back to the world map" : "Reset view"}
+          title={focusCode ? "Back to the world map" : "Reset view"}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"
+        >
+          <Scan className="h-4 w-4" />
+        </button>
       </div>
 
       {hover && !focusCode && (
