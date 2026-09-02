@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ELK, { type ElkNode, type ElkExtendedEdge } from "elkjs/lib/elk.bundled.js";
+import { select } from "d3-selection";
+import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
+import "d3-transition";
+import { Minus, Plus, Scan } from "lucide-react";
 import { classHref } from "@/lib/data";
 import type { Graph } from "@/lib/hierarchy-client";
 
@@ -85,6 +89,53 @@ export function HierarchyDiagram({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, graph]);
 
+  // Google-Maps-style pan and zoom: wheel or pinch to zoom, drag to pan, buttons for the rest.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const gRef = useRef<SVGGElement>(null);
+  const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+
+  const fit = useCallback(
+    (animate = true) => {
+      const svgEl = svgRef.current;
+      const z = zoomRef.current;
+      if (!svgEl || !z || !laid) return;
+      const { width: cw, height: ch } = svgEl.getBoundingClientRect();
+      const k = Math.min(cw / laid.width, ch / laid.height, 1.2) * 0.94;
+      const tx = (cw - laid.width * k) / 2;
+      const ty = Math.max(12, (ch - laid.height * k) / 2);
+      const sel = select(svgEl);
+      const target = zoomIdentity.translate(tx, ty).scale(k);
+      if (animate) sel.transition().duration(350).call(z.transform, target);
+      else sel.call(z.transform, target);
+    },
+    [laid],
+  );
+
+  useEffect(() => {
+    const svgEl = svgRef.current;
+    const gEl = gRef.current;
+    if (!svgEl || !gEl || !laid) return;
+    const g = select(gEl);
+    const z = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on("zoom", (ev) => g.attr("transform", ev.transform.toString()));
+    const sel = select(svgEl);
+    sel.call(z);
+    zoomRef.current = z;
+    fit(false);
+    return () => {
+      sel.on(".zoom", null);
+      zoomRef.current = null;
+    };
+  }, [laid, fit]);
+
+  const zoomBy = (factor: number) => {
+    const svgEl = svgRef.current;
+    const z = zoomRef.current;
+    if (!svgEl || !z) return;
+    select(svgEl).transition().duration(200).call(z.scaleBy, factor);
+  };
+
   if (ids.length === 0) {
     return <p className="text-base text-muted-foreground">Nothing to draw for this selection.</p>;
   }
@@ -99,17 +150,29 @@ export function HierarchyDiagram({
     );
   }
 
+  const btn =
+    "inline-flex h-11 w-11 items-center justify-center rounded-full border border-foreground/50 bg-background text-foreground transition-colors hover:border-foreground";
+
   return (
-    <div className="max-h-[75vh] overflow-auto rounded-lg border border-border bg-card p-3">
+    <div className="relative rounded-lg border border-border bg-card">
+      <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
+        <button type="button" onClick={() => zoomBy(1.5)} aria-label="Zoom in" title="Zoom in" className={btn}>
+          <Plus className="h-5 w-5" />
+        </button>
+        <button type="button" onClick={() => zoomBy(1 / 1.5)} aria-label="Zoom out" title="Zoom out" className={btn}>
+          <Minus className="h-5 w-5" />
+        </button>
+        <button type="button" onClick={() => fit()} aria-label="Fit to view" title="Fit to view" className={btn}>
+          <Scan className="h-5 w-5" />
+        </button>
+      </div>
       <svg
-        width={laid.width}
-        height={laid.height}
-        viewBox={`0 0 ${laid.width} ${laid.height}`}
+        ref={svgRef}
         role="img"
-        aria-label={`Diagram of ${ids.length} classes`}
-        className="block"
-        style={{ minWidth: laid.width }}
+        aria-label={`Diagram of ${ids.length} classes. Drag to pan, scroll or pinch to zoom.`}
+        className="block h-[70vh] w-full touch-none cursor-grab active:cursor-grabbing"
       >
+        <g ref={gRef}>
         <g fill="none" strokeWidth={1.5} className="stroke-foreground/45">
           {laid.edges.map((e) => (
             <polyline
@@ -153,7 +216,9 @@ export function HierarchyDiagram({
             </a>
           );
         })}
+        </g>
       </svg>
+      <p className="eyebrow px-3 py-2 text-muted-foreground">Drag to pan · scroll or pinch to zoom · click a class to open it</p>
     </div>
   );
 }
