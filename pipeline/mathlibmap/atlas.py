@@ -199,6 +199,11 @@ def build(snapshot: dict | None = None, *, write_pages: bool = True) -> dict:
     is_thm = np.array([k == "theorem" for k in kinds])
     citing = sparse.diags(is_thm.astype(np.uint8)) @ spine
     cited_by = np.asarray(citing.sum(axis=0)).ravel().astype(np.int64)
+    # A "most relied on" signal a mathematician trusts: only explicit proof-position citations (E),
+    # not statement mentions. Definitions like Set/Real appear in countless statements but far fewer
+    # proofs, so ranking by this stops them from dominating every "most cited" list.
+    citing_proof = sparse.diags(is_thm.astype(np.uint8)) @ proof
+    proven_by = np.asarray(citing_proof.sum(axis=0)).ravel().astype(np.int64)
     rank = pagerank(spine)
 
     # Axioms and depth over the full graph.
@@ -274,7 +279,7 @@ def build(snapshot: dict | None = None, *, write_pages: bool = True) -> dict:
     for i in spine_ids:
         nm = names[int(i)]
         r = decls[nm]
-        rank_out[nm] = [int(cited_by[i]), kinds[int(i)]]
+        rank_out[nm] = [int(cited_by[i]), kinds[int(i)], int(proven_by[i])]
         if not write_pages:
             continue
         ty, doc = types.get(nm, ("", None))
@@ -293,6 +298,7 @@ def build(snapshot: dict | None = None, *, write_pages: bool = True) -> dict:
             "deprecated": dep,
             "famous": famous.get(nm, []),
             "citedBy": int(cited_by[i]),
+            "provenCitedBy": int(proven_by[i]),
             "rank": float(rank[i]),
             "depth": int(depth[i]),
             "axioms": axioms_of(int(i)),
@@ -311,6 +317,19 @@ def build(snapshot: dict | None = None, *, write_pages: bool = True) -> dict:
             print(f"  wrote {written:,} node pages", flush=True)
 
     (OUT / "rank.json").write_text(json.dumps(rank_out, separators=(",", ":")), encoding="utf-8")
+
+    # Area-level foundational depth (median spine depth) for the World-map vertical axis (embed.py):
+    # areas near the axioms sit low, areas built on a tall tower of prerequisites sit high.
+    from statistics import median
+
+    area_depths: dict[str, list[int]] = defaultdict(list)
+    for i in spine_ids:
+        ar = area_of(decls[names[int(i)]].get("module") or "")
+        if ar:
+            area_depths[ar["code"]].append(int(depth[i]))
+    area_depth = {c: float(median(ds)) for c, ds in area_depths.items() if ds}
+    (OUT / "area-depth.json").write_text(json.dumps(area_depth, separators=(",", ":")), encoding="utf-8")
+
     n_shards = build_search(rank_out)
 
     # Downloadable derived data, one folder per snapshot.
@@ -362,6 +381,7 @@ License: modules-msc.tsv and the MSC-derived columns are CC BY-NC-SA 4.0 (they i
     }, indent=1), encoding="utf-8")
 
     top = sorted(((int(cited_by[i]), names[int(i)]) for i in spine_ids), reverse=True)[:25]
+    top_proven = sorted(((int(proven_by[i]), names[int(i)]) for i in spine_ids), reverse=True)[:25]
     axiom_dist = Counter(tuple(axioms_of(int(i))) for i in spine_ids)
     meta = {
         "snapshot": snapshot or {},
@@ -372,6 +392,7 @@ License: modules-msc.tsv and the MSC-derived columns are CC BY-NC-SA 4.0 (they i
         "proofEdges": int(proof.nnz),
         "maxDepth": int(depth.max()),
         "topCited": top,
+        "topProven": top_proven,
         "axiomProfiles": {" + ".join(k) if k else "none": v for k, v in axiom_dist.most_common(8)},
         "searchShards": n_shards,
     }

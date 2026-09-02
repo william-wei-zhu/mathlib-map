@@ -173,17 +173,21 @@ def build(snapshot: dict | None = None) -> dict:
     top_by_area: dict[str, list[dict]] = defaultdict(list)
     if rank_path.exists():
         rank = json.loads(rank_path.read_text(encoding="utf-8"))
-        best: dict[str, list[tuple[int, str]]] = defaultdict(list)
-        for nm, (cited, kind) in rank.items():
+        # Rank each area's results by proof-position citations (provenCitedBy), which reflects what
+        # proofs actually rely on, rather than the total (dominated by definitions used in statements).
+        best: dict[str, list[tuple[int, int, str]]] = defaultdict(list)
+        for nm, vals in rank.items():
+            cited, kind = vals[0], vals[1]
+            proven = vals[2] if len(vals) > 2 else cited
             if kind != "theorem":
                 continue
             mod = decl_mod.get(nm)
             a = area_of_module(mod) if mod else None
             if a:
-                best[a].append((cited, nm))
+                best[a].append((proven, cited, nm))
         for a, lst in best.items():
             lst.sort(reverse=True)
-            top_by_area[a] = [{"name": nm, "citedBy": c} for c, nm in lst[:24]]
+            top_by_area[a] = [{"name": nm, "citedBy": c, "provenCitedBy": p} for p, c, nm in lst[:24]]
 
     # ---- structures per area
     hier = json.loads((ROOT / "out" / "hierarchy" / "index.json").read_text(encoding="utf-8"))

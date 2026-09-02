@@ -35,6 +35,17 @@ R_MIN = 20.0
 R_SPAN = 80.0
 
 
+def _area_depths() -> dict[str, float]:
+    """Median spine depth per area (from atlas.py), the World map's vertical axis. {} if absent."""
+    p = OUT / "atlas" / "area-depth.json"
+    if p.exists():
+        try:
+            return {str(k): float(v) for k, v in json.loads(p.read_text(encoding="utf-8")).items()}
+        except Exception:
+            return {}
+    return {}
+
+
 def _area_of_module(cls: dict, m: str) -> str | None:
     rec = cls.get(m)
     if not rec:
@@ -171,7 +182,14 @@ def _layout(pos: np.ndarray, radii: np.ndarray, iters: int = 800, pad: float = 1
 
 
 def compute_positions(size_by_code: dict[str, int]) -> dict[str, list[float]]:
-    """Return {area code: [x, y]} in the 1200 x 760 viewBox, for areas with declarations."""
+    """Return {area code: [x, y]} in the 1200 x 760 viewBox, for areas with declarations.
+
+    The map has a meaningful vertical axis: y encodes foundational depth (distance from the axioms),
+    so areas near the axioms sit low and areas built on a tall tower of prerequisites sit high. The
+    horizontal axis groups related areas (the spectral / Fiedler ordering of cross-area citations).
+    A collision pass separates blobs while a decaying spring keeps them near those meaningful targets.
+    Falls back to the older relatedness-only force layout when area depths are unavailable.
+    """
     codes, W = area_edge_weights()
     if codes is None:
         return {}
@@ -192,23 +210,40 @@ def compute_positions(size_by_code: dict[str, int]) -> dict[str, list[float]]:
     radii = np.sqrt(sizes / sizes.max()) * R_SPAN + R_MIN
     maxr = float(radii.max())
 
-    pos = np.column_stack([
-        VIEW_W / 2 + xy[:, 0] * (VIEW_W / 2 - maxr - MARGIN),
-        VIEW_H / 2 + xy[:, 1] * (VIEW_H / 2 - maxr - MARGIN),
-    ])
-    # Force layout (with gravity) keeps the areas compact and related ones together, no strays.
-    pos = _fr(pos, Wk, radii)
+    depths = _area_depths()
+    n_with_depth = sum(1 for c in keep if c in depths)
 
-    # Isotropic fit to the viewBox (no per-axis distortion, so nothing gets stretched into a
-    # stray), then a collision pass to guarantee no overlaps.
-    lo = pos.min(0)
-    hi = pos.max(0)
-    c = (lo + hi) / 2
-    sx = (VIEW_W - 2 * MARGIN) / max(hi[0] - lo[0] + 2 * maxr, 1e-6)
-    sy = (VIEW_H - 2 * MARGIN) / max(hi[1] - lo[1] + 2 * maxr, 1e-6)
-    scale = min(sx, sy, 1.6)
-    pos = (pos - c) * scale + np.array([VIEW_W / 2, VIEW_H / 2])
-    pos = _layout(pos, radii, iters=300)
+    if n_with_depth >= max(3, len(keep) // 2):
+        # Meaningful axes. X: spread areas evenly by their spectral (relatedness) order. Y: place by
+        # foundational depth, advanced areas (deep) at the top, foundational areas (shallow) at the
+        # bottom. Missing depths fall to the median so an area is never stranded.
+        x_rank = np.argsort(np.argsort(xy[:, 0])).astype(np.float64) / max(1, len(keep) - 1)  # 0..1
+        d = np.array([depths.get(c, np.nan) for c in keep], dtype=np.float64)
+        med = float(np.nanmedian(d))
+        d = np.where(np.isnan(d), med, d)
+        dn = (d - d.min()) / (d.max() - d.min()) if d.max() > d.min() else np.zeros_like(d)  # 0..1
+        inner_w = VIEW_W - 2 * (MARGIN + maxr)
+        inner_h = VIEW_H - 2 * (MARGIN + maxr)
+        pos = np.column_stack([
+            MARGIN + maxr + x_rank * inner_w,
+            MARGIN + maxr + (1.0 - dn) * inner_h,  # deep (dn=1) -> small y -> top
+        ])
+        pos = _layout(pos, radii, iters=400)
+    else:
+        # Relatedness-only fallback (no depth signal): the older force layout.
+        pos = np.column_stack([
+            VIEW_W / 2 + xy[:, 0] * (VIEW_W / 2 - maxr - MARGIN),
+            VIEW_H / 2 + xy[:, 1] * (VIEW_H / 2 - maxr - MARGIN),
+        ])
+        pos = _fr(pos, Wk, radii)
+        lo = pos.min(0)
+        hi = pos.max(0)
+        c = (lo + hi) / 2
+        sx = (VIEW_W - 2 * MARGIN) / max(hi[0] - lo[0] + 2 * maxr, 1e-6)
+        sy = (VIEW_H - 2 * MARGIN) / max(hi[1] - lo[1] + 2 * maxr, 1e-6)
+        scale = min(sx, sy, 1.6)
+        pos = (pos - c) * scale + np.array([VIEW_W / 2, VIEW_H / 2])
+        pos = _layout(pos, radii, iters=300)
 
     out: dict[str, list[float]] = {}
     for c, p in zip(keep, pos):

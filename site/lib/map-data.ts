@@ -55,8 +55,10 @@ export type AreaPage = Omit<AreaSummary, "subareas"> & {
   conjectures: { name: string; category: "open" | "solved"; collection: string | null; url: string | null }[];
   undergrad: { chapter: string; total: number; missing: number; missingTopics: string[] }[];
   classes: { id: string; assumedBy: number; instances: number }[];
-  /** Most cited results in this area, from the Theorems build; absent until it has run. */
-  topResults?: { name: string; citedBy: number }[];
+  /** Results this area's proofs most rely on, from the Theorems build; absent until it has run.
+   *  `provenCitedBy` counts citations in an explicit proof position (a truer "most relied on" signal
+   *  than the total, which is dominated by definitions that merely appear in statements). */
+  topResults?: { name: string; citedBy: number; provenCitedBy?: number }[];
 };
 
 /** Short name with a fallback for data written before the field existed. */
