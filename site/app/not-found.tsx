@@ -2,9 +2,9 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col items-start px-4 py-24 sm:px-6">
+    <div className="mx-auto flex max-w-3xl flex-col items-start px-4 py-12 sm:px-6">
       <p className="eyebrow text-accent-ink">404</p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl leading-tight tracking-tight text-foreground">
         That page is not on the map.
       </h1>
       <p className="mt-4 text-base text-foreground">

@@ -8,6 +8,7 @@ import { SNAPSHOT } from "@/lib/snapshot";
 import { DocText } from "@/components/site/doc-text";
 import { DependencyStar } from "@/components/site/dependency-star";
 import { PagedList } from "@/components/site/paged-list";
+import { PathTrace } from "@/components/atlas/path-trace";
 
 type Params = { name: string };
 const link = "text-accent-ink underline underline-offset-4 hover:text-foreground";
@@ -67,7 +68,7 @@ export default async function DeclRoute({ params }: { params: Promise<Params> })
           </>
         )}
       </p>
-      <h1 className="lean mt-4 break-words text-3xl font-medium leading-tight tracking-tight text-foreground sm:text-5xl">{page.name}</h1>
+      <h1 className="lean mt-4 break-all text-lg @sm:text-xl @lg:text-2xl font-medium leading-tight tracking-tight text-foreground">{page.name}</h1>
 
       {page.deprecated && (
         <p className="mt-4 rounded-md border border-border bg-card p-4 text-base text-foreground">
@@ -93,7 +94,7 @@ export default async function DeclRoute({ params }: { params: Promise<Params> })
       <pre className="lean mt-6 overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-border bg-card p-4 text-sm text-foreground">{page.statement}</pre>
       {page.doc && <DocText text={page.doc} className="mt-4 text-lg text-foreground" />}
 
-      <dl className="mt-6 grid gap-x-8 gap-y-4 text-base sm:grid-cols-2">
+      <dl className="mt-6 grid gap-x-8 gap-y-4 text-base @lg:grid-cols-2">
         {page.module && (
           <div>
             <dt className="eyebrow text-muted-foreground">Defined in</dt>
@@ -142,6 +143,10 @@ export default async function DeclRoute({ params }: { params: Promise<Params> })
 
       <Section title="Around this declaration" intro="Dashed lines are statement dependencies; solid lines are citations in proofs.">
         <DependencyStar name={page.name} uses={page.uses} usedBy={page.usedBy} />
+      </Section>
+
+      <Section title="Trace a path" intro="How does this result rest on another one?">
+        <PathTrace from={page.name} />
       </Section>
 
       <Section title="Cites" count={fmt(page.usesCount)} intro="Mathlib declarations this one mentions in its statement or cites explicitly in its proof. Plumbing is filtered out.">

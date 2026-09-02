@@ -57,6 +57,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
   if (!page) notFound();
 
   const cov = coverage(page);
+  const avgConf = page.files.length ? page.files.reduce((s, f) => s + (f.confidence || 0), 0) / page.files.length : 0;
   const famousDone = page.famous.filter((t) => t.mathlib);
   const famousMissing = page.famous.filter((t) => !t.mathlib);
   const openConj = page.conjectures.filter((c) => c.category === "open");
@@ -65,9 +66,9 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <p className="eyebrow text-accent-ink">
-        <Link href="/#map" className="underline underline-offset-4 hover:text-foreground">Map</Link> · <span className="lean">{page.code}</span>
+        <Link href="/" className="underline underline-offset-4 hover:text-foreground">Map</Link> · <span className="lean">{page.code}</span>
       </p>
-      <h1 className="mt-4 font-display text-4xl capitalize leading-tight tracking-tight text-foreground sm:text-6xl">{shortName(page)}</h1>
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl capitalize leading-tight tracking-tight text-foreground">{shortName(page)}</h1>
       <p className="eyebrow mt-3 text-muted-foreground">MSC {page.code} · {page.label}</p>
       <p className="mt-5 text-lg text-foreground">
         {fmt(page.declarations)} declarations ({fmt(page.theorems)} theorems, {fmt(page.definitions)} definitions) across {fmt(page.modules)} files.
@@ -79,7 +80,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
         {page.conjectures_open > 0 && <> {fmt(page.conjectures_open)} open conjectures here are stated in Lean.</>}
       </p>
       <p className="mt-4 text-sm text-muted-foreground">
-        Files are assigned to areas by a language model reading each file&apos;s documentation.{" "}
+        Files are assigned to areas by a language model reading each file&apos;s documentation{avgConf > 0 ? ` (average confidence ${pct(avgConf)}; about 73% agree with the 1000-plus list's own codes)` : ""}.{" "}
         <a href={reportHref(page)} target="_blank" rel="noopener noreferrer" className={link}>Report a file that is in the wrong area</a>.
       </p>
 
@@ -132,7 +133,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
 
       {page.hundred.length > 0 && (
         <Section title="From the 100 theorems list" count={String(page.hundred.length)}>
-          <ul className="grid gap-1.5 sm:grid-cols-2">
+          <ul className="grid gap-1.5 @lg:grid-cols-2">
             {page.hundred.map((t) => (
               <li key={t.number}>
                 <a href={mathlibDocsHref(t.decl)} target="_blank" rel="noopener noreferrer" className={link}>{t.number}. {t.title}</a>
@@ -176,12 +177,12 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
       )}
 
       {page.topResults && page.topResults.length > 0 && (
-        <Section title="Most cited results" count={String(page.topResults.length)} intro="Declarations in this area that other Mathlib results cite most.">
-          <ul className="grid gap-1.5 sm:grid-cols-2">
+        <Section title="Most relied on in proofs" count={String(page.topResults.length)} intro="Results here that other Mathlib proofs cite most, counting explicit proof-position citations (not definitions that merely appear in statements).">
+          <ul className="grid gap-1.5 @lg:grid-cols-2">
             {page.topResults.map((r) => (
               <li key={r.name} className="flex items-baseline justify-between gap-3">
                 <Link href={declHref(r.name)} className={`lean min-w-0 break-all text-sm ${link}`}>{r.name}</Link>
-                <span className="eyebrow min-w-0 break-words text-muted-foreground">{fmt(r.citedBy)}</span>
+                <span className="eyebrow min-w-0 break-words text-muted-foreground" title="citations in an explicit proof position">{fmt(r.provenCitedBy ?? r.citedBy)}</span>
               </li>
             ))}
           </ul>
@@ -211,8 +212,13 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
                 <a href={moduleDocsHref(m.module)} target="_blank" rel="noopener noreferrer" className={`lean break-all text-sm ${link}`}>{m.module}</a>
                 {m.title && <p className="text-sm text-foreground">{m.title}</p>}
               </div>
-              <p className="eyebrow min-w-0 break-words text-muted-foreground">
+              <p className="eyebrow flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 break-words text-muted-foreground">
                 <span className="lean">{m.primary}</span> · {fmt(m.declarations)}
+                {m.source === "override" ? (
+                  <span className="text-accent-ink" title="Assigned by a curated override">curated</span>
+                ) : m.confidence > 0 && m.confidence < 0.55 ? (
+                  <span title={`Model confidence ${pct(m.confidence)}`}>low confidence</span>
+                ) : null}
               </p>
             </div>
           ))}

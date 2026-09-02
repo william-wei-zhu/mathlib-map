@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <p className="eyebrow text-accent-ink">Privacy &amp; disclaimer</p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl leading-tight tracking-tight text-foreground">
         We keep almost nothing, and we show our work.
       </h1>
       <p className="eyebrow mt-5 text-muted-foreground">Last updated · September 2026</p>

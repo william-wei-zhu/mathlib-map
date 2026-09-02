@@ -66,7 +66,7 @@ export default function DocsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <p className="eyebrow text-accent-ink">How it works</p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">
+      <h1 className="mt-4 font-display text-2xl @sm:text-3xl @lg:text-4xl @2xl:text-5xl leading-tight tracking-tight text-foreground">
         From a Mathlib release to a page, in five acts.
       </h1>
       <p className="mt-5 max-w-2xl text-lg text-foreground">
@@ -82,7 +82,7 @@ export default function DocsPage() {
         {ACTS.map((act, i) => (
           <li key={act.title}>
             <Reveal>
-              <div className={`grid items-center gap-8 sm:grid-cols-2 ${i % 2 === 1 ? "sm:[&>*:first-child]:order-last" : ""}`}>
+              <div className={`grid items-center gap-8 @lg:grid-cols-2 ${i % 2 === 1 ? "sm:[&>*:first-child]:order-last" : ""}`}>
                 <div className="rounded-lg border border-border bg-card p-4">
                   <act.Art />
                 </div>
@@ -100,7 +100,7 @@ export default function DocsPage() {
 
       <Reveal className="mt-16 border-t border-border pt-8">
         <h2 className="font-display text-3xl leading-tight text-foreground">What it runs on</h2>
-        <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+        <dl className="mt-6 grid gap-4 @lg:grid-cols-2">
           {STACK.map(([k, v]) => (
             <div key={k} className="rounded-lg border border-border bg-card p-4">
               <dt className="eyebrow text-muted-foreground">{k}</dt>

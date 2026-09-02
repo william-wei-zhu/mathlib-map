@@ -19,8 +19,13 @@ type Laid = {
 const NODE_H = 38;
 const CHAR_W = 9.4;
 
+/** Width the pill needs. Lean class names carry wide Unicode glyphs (ℝ, ∀, primes) that are far
+ *  wider than a Latin letter in the mono face, so count non-ASCII code points as wider to avoid
+ *  clipped labels. */
 function nodeWidth(id: string) {
-  return Math.max(64, Math.round(id.length * CHAR_W + 28));
+  let w = 28;
+  for (const ch of id) w += (ch.codePointAt(0) ?? 0) > 127 ? 13 : CHAR_W;
+  return Math.max(64, Math.round(w));
 }
 
 /**
@@ -117,7 +122,7 @@ export function HierarchyDiagram({
     if (!svgEl || !gEl || !laid) return;
     const g = select(gEl);
     const z = zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 4])
+      .scaleExtent([0.04, 4]) // low floor so even a wide 80-node layout can fit to the canvas
       .on("zoom", (ev) => g.attr("transform", ev.transform.toString()));
     const sel = select(svgEl);
     sel.call(z);
@@ -137,25 +142,25 @@ export function HierarchyDiagram({
   };
 
   if (ids.length === 0) {
-    return <p className="text-base text-muted-foreground">Nothing to draw for this selection.</p>;
+    return <div className="grid h-full place-items-center p-6"><p className="text-base text-muted-foreground">Nothing to draw for this selection.</p></div>;
   }
   if (failed) {
-    return <p className="text-base text-foreground">The layout engine failed on this selection. Try a smaller set.</p>;
+    return <div className="grid h-full place-items-center p-6"><p className="text-base text-foreground">The layout engine failed on this selection. Try a smaller set.</p></div>;
   }
   if (!laid) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-lg border border-border bg-card">
+      <div className="grid h-full place-items-center p-6">
         <p className="eyebrow text-muted-foreground">Laying out {ids.length} classes…</p>
       </div>
     );
   }
 
   const btn =
-    "inline-flex h-11 w-11 items-center justify-center rounded-full border border-foreground/50 bg-background text-foreground transition-colors hover:border-foreground";
+    "inline-flex h-11 w-11 items-center justify-center rounded-full border border-foreground/50 bg-card text-foreground shadow-sm transition-colors hover:border-foreground";
 
   return (
-    <div className="relative rounded-lg border border-border bg-card">
-      <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
+    <div className="relative h-full w-full">
+      <div className="absolute bottom-3 left-3 z-10 flex flex-col gap-2">
         <button type="button" onClick={() => zoomBy(1.5)} aria-label="Zoom in" title="Zoom in" className={btn}>
           <Plus className="h-5 w-5" />
         </button>
@@ -170,7 +175,7 @@ export function HierarchyDiagram({
         ref={svgRef}
         role="img"
         aria-label={`Diagram of ${ids.length} classes. Drag to pan, scroll or pinch to zoom.`}
-        className="block h-[70vh] w-full touch-none cursor-grab active:cursor-grabbing"
+        className="block h-full w-full touch-none cursor-grab active:cursor-grabbing"
       >
         <g ref={gRef}>
         <g fill="none" strokeWidth={1.5} className="stroke-foreground/45">
@@ -218,7 +223,7 @@ export function HierarchyDiagram({
         })}
         </g>
       </svg>
-      <p className="eyebrow px-3 py-2 text-muted-foreground">Drag to pan · scroll or pinch to zoom · click a class to open it</p>
+      <p className="eyebrow pointer-events-none absolute left-3 top-3 rounded-full bg-card/90 px-3 py-1 text-muted-foreground shadow-sm">Drag to pan · scroll or pinch to zoom · click a class to open it</p>
     </div>
   );
 }

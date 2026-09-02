@@ -22,7 +22,17 @@ function isDef(kind: string): boolean {
  * Dashed edges are statement dependencies, solid edges are proof citations. Click any neighbour to
  * re-centre on it (the working mode of the theorem layer).
  */
-export function TheoremGraph({ node, onPick }: { node: GraphNode | null; onPick: (name: string) => void }) {
+export function TheoremGraph({
+  node,
+  onPick,
+  containerClassName = "inset-0",
+}: {
+  node: GraphNode | null;
+  onPick: (name: string) => void;
+  /** Positions the overlay over the *visible* map area (outside the panel) so the graph is not
+   *  half-hidden. Defaults to full-bleed. */
+  containerClassName?: string;
+}) {
   if (!node) return null;
   const cx = VW / 2;
   const cy = VH / 2;
@@ -54,7 +64,7 @@ export function TheoremGraph({ node, onPick }: { node: GraphNode | null; onPick:
   const nameW = Math.min(VW - 80, Math.max(150, node.name.length * 9.5 + 34));
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10">
+    <div className={`pointer-events-none absolute z-10 ${containerClassName}`}>
       <div className="absolute inset-0 bg-background/55 backdrop-blur-[1px]" />
       <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="xMidYMid meet" className="pointer-events-auto relative h-full w-full">
         <text x={cx} y={cy - 250} textAnchor="middle" fontSize={12} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
@@ -70,7 +80,15 @@ export function TheoremGraph({ node, onPick }: { node: GraphNode | null; onPick:
         {[...up, ...down].map(({ d, x, y }) => {
           const r = 7 + Math.sqrt(d.citedBy) / 16;
           return (
-            <g key={d.name} className="cursor-pointer" onClick={() => onPick(d.name)}>
+            <g
+              key={d.name}
+              className="cursor-pointer outline-none"
+              role="button"
+              tabIndex={0}
+              aria-label={`${short(d.name)}: cited by ${d.citedBy}`}
+              onClick={() => onPick(d.name)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(d.name); } }}
+            >
               <circle cx={x} cy={y} r={r} fill={isDef(d.kind) ? "var(--card)" : "var(--accent-ink)"} stroke="var(--accent-ink)" strokeWidth={1.5} />
               <text x={x} y={y - r - 6} textAnchor="middle" fontSize={12.5} fill="var(--foreground)" style={{ fontFamily: "var(--font-mono)" }}>
                 {short(d.name)}

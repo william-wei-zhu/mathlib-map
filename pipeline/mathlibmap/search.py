@@ -28,7 +28,8 @@ def search_keys(name: str) -> set[str]:
 
 def build_search(rank: dict[str, list]) -> int:
     shards: dict[str, list] = defaultdict(list)
-    for name, (cited, kind) in rank.items():
+    for name, entry in rank.items():
+        cited, kind = entry[0], entry[1]  # entry may also carry provenCitedBy as a third element
         for k in search_keys(name):
             shards[k].append([name, kind, int(cited)])
     out = OUT / "search"

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Layers } from "lucide-react";
 import { RAMP } from "@/lib/ramp";
 import { cn } from "@/lib/utils";
+import { useDismiss } from "@/lib/use-dismiss";
 import { track } from "@/lib/analytics";
 import type { Metric } from "./atlas-canvas";
 
@@ -18,12 +19,8 @@ export function LayersControl({ metric, onMetric }: { metric: Metric; onMetric: 
   const structures = pathname.startsWith("/hierarchy") || pathname.startsWith("/class");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const f = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", f);
-    return () => document.removeEventListener("mousedown", f);
-  }, []);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(ref, open, close);
 
   const tab = (active: boolean) =>
     cn("eyebrow flex-1 rounded-full px-3 py-1.5 text-center transition-colors", active ? "bg-foreground text-background" : "text-foreground hover:bg-muted");
@@ -58,6 +55,13 @@ export function LayersControl({ metric, onMetric }: { metric: Metric; onMetric: 
               <p className="mt-2 text-xs leading-snug text-muted-foreground">
                 {metric === "coverage" ? "Shaded by share of famous theorems formalized." : "Shaded by open conjectures stated in Lean."}
               </p>
+              <div className="mt-3 border-t border-border pt-2">
+                <p className="text-xs leading-snug text-muted-foreground">
+                  Blob <span className="text-foreground">size</span> = declarations ·{" "}
+                  <span className="text-foreground">height</span> = distance from the axioms ·{" "}
+                  <span className="text-foreground">nearby</span> areas share theorems.
+                </p>
+              </div>
             </>
           )}
         </div>

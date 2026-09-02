@@ -13,6 +13,7 @@ import { TheoremGraph, type GraphNode } from "./theorem-graph";
 import { SearchBox } from "./search-box";
 import { LayersControl } from "./layers-control";
 import { InfoMenu } from "./info-menu";
+import { MapLegend } from "./map-legend";
 import { track } from "@/lib/analytics";
 
 const MIN_W = 300;
@@ -44,7 +45,17 @@ async function fetchLandmarks(code: string): Promise<Landmark[]> {
   return (data?.topResults ?? []).slice(0, 18);
 }
 
-export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; children: React.ReactNode }) {
+export type Snapshot = { mathlibTag: string; date: string; downloads: string | null };
+
+export function AtlasShell({
+  mapIndex,
+  snapshot,
+  children,
+}: {
+  mapIndex: MapIndex | null;
+  snapshot?: Snapshot;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [metric, setMetric] = useState<Metric>("coverage");
@@ -57,10 +68,25 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
   const contentRef = useRef<HTMLDivElement>(null);
 
   const isHome = pathname === "/";
+  const isDecl = pathname.startsWith("/decl");
+  const isHierarchy = pathname === "/hierarchy";
+  const usesOverlay = isDecl || isHierarchy; // routes whose payload is a full-canvas overlay
+  const prevPath = useRef<string | null>(null);
 
-  // Open the sidebar for any content route; collapse on the map home.
+  // Keep an overlay (theorem graph, structures diagram) in the visible map area, never behind the
+  // panel: on desktop it starts to the right of the panel; on mobile the sheet is shortened and the
+  // overlay sits above it.
+  const overlayInset = open
+    ? "top-0 right-0 left-0 sm:left-[calc(var(--sw)+1.5rem)] bottom-[47vh] sm:bottom-0"
+    : "inset-0";
+
+  // Collapse on the map home; open the panel when diving in from the map (or on first content load);
+  // otherwise preserve the user's manual collapse as they move between content routes.
   useEffect(() => {
-    setOpen(pathname !== "/");
+    const was = prevPath.current;
+    prevPath.current = pathname;
+    if (pathname === "/") { setOpen(false); return; }
+    if (was === null || was === "/") setOpen(true);
   }, [pathname]);
 
   // Resolve what the map should focus on from the route: an area shows its landmarks; a
@@ -111,6 +137,10 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
 
   const startResize = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
+    // Capture the pointer so a fast drag that leaves the window (or crosses an iframe) never strands
+    // the listeners with the handle stuck mid-drag.
+    const handle = e.currentTarget as HTMLElement;
+    try { handle.setPointerCapture(e.pointerId); } catch {}
     let latest = width;
     const onMove = (ev: PointerEvent) => {
       latest = Math.min(MAX_W, Math.max(MIN_W, ev.clientX - 12));
@@ -119,6 +149,7 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
     const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      try { handle.releasePointerCapture(e.pointerId); } catch {}
       document.body.style.userSelect = "";
       try { localStorage.setItem(STORE_KEY, String(Math.round(latest))); } catch {}
     };
@@ -129,7 +160,7 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
 
   return (
     <div
-      className="relative h-dvh w-screen overflow-hidden bg-background"
+      className="relative h-dvh w-full overflow-hidden bg-background"
       style={{ ["--sw" as string]: `${width}px` } as React.CSSProperties}
     >
       {mapIndex ? (
@@ -148,7 +179,15 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
         </div>
       )}
 
-      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} />
+      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} containerClassName={overlayInset} />
+
+      {/* structures diagram renders here (portaled by HierarchyExplorer) over the faint map */}
+      {isHierarchy && (
+        <div className={`pointer-events-none absolute z-10 ${overlayInset}`}>
+          <div className="absolute inset-0 bg-background/55 backdrop-blur-[1px]" />
+          <div id="atlas-hierarchy-slot" className="pointer-events-auto absolute inset-0" />
+        </div>
+      )}
 
       {/* top: logo + search (full width on mobile, panel-width on desktop) */}
       <div className="pointer-events-none absolute left-3 right-16 top-3 z-30 flex items-center gap-2 sm:right-auto sm:w-[var(--sw)] sm:max-w-[calc(100vw-1.5rem)]">
@@ -162,15 +201,15 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
 
       {/* menu (top-right, both breakpoints) */}
       <div className="absolute right-3 top-3 z-40">
-        <InfoMenu />
+        <InfoMenu snapshot={snapshot} />
       </div>
 
       {/* panel: left card on desktop, bottom sheet on mobile */}
       {open ? (
         <section
-          className="pointer-events-auto absolute z-20 flex flex-col overflow-hidden border border-border bg-card shadow-xl
-            max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:h-[68vh] max-sm:rounded-t-2xl
-            sm:left-3 sm:right-auto sm:top-[4.5rem] sm:bottom-3 sm:w-[var(--sw)] sm:rounded-2xl"
+          className={`pointer-events-auto absolute z-20 flex flex-col overflow-hidden border border-border bg-card shadow-xl
+            max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:rounded-t-2xl ${usesOverlay ? "max-sm:h-[47vh]" : "max-sm:h-[68vh]"}
+            sm:left-3 sm:right-auto sm:top-[4.5rem] sm:bottom-3 sm:w-[var(--sw)] sm:rounded-2xl`}
         >
           <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden="true" />
           <button
@@ -181,7 +220,7 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
           >
             <PanelLeftClose className="h-4 w-4" />
           </button>
-          <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+          <div ref={contentRef} className="@container min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
         </section>
       ) : (
         <button
@@ -214,6 +253,9 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
       <div className="pointer-events-auto absolute bottom-5 right-5 z-30 sm:bottom-[10.5rem]">
         <LayersControl metric={metric} onMetric={setMetric} />
       </div>
+
+      {/* first-run map grammar primer, world view only */}
+      {isHome && <MapLegend />}
     </div>
   );
 }
