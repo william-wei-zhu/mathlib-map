@@ -37,6 +37,7 @@ from scipy.sparse.csgraph import breadth_first_order, connected_components
 
 from .fetch import CACHE
 from .mapview import load_thousand_plus
+from .search import build_search
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out" / "atlas"
@@ -263,9 +264,7 @@ def build(snapshot: dict | None = None) -> dict:
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "nodes").mkdir(exist_ok=True)
-    (OUT / "search").mkdir(exist_ok=True)
-    search: dict[str, list] = defaultdict(list)
-    rank_out: dict[str, int] = {}
+    rank_out: dict[str, list] = {}
     written = 0
     for i in spine_ids:
         nm = names[int(i)]
@@ -301,17 +300,11 @@ def build(snapshot: dict | None = None) -> dict:
         p.write_text(json.dumps(page, separators=(",", ":")), encoding="utf-8")
         written += 1
         rank_out[nm] = [int(cited_by[i]), kinds[int(i)]]
-        keys = {c[:2].lower() for c in nm.split(".") if len(c) >= 2}
-        for k in keys:
-            if re.fullmatch(r"[a-z0-9_]{2}", k):
-                search[k].append([nm, kinds[int(i)], int(cited_by[i])])
         if written % 50000 == 0:
             print(f"  wrote {written:,} node pages", flush=True)
 
-    for k, entries in search.items():
-        entries.sort(key=lambda x: -x[2])
-        (OUT / "search" / f"{k}.json").write_text(json.dumps(entries, separators=(",", ":")), encoding="utf-8")
     (OUT / "rank.json").write_text(json.dumps(rank_out, separators=(",", ":")), encoding="utf-8")
+    n_shards = build_search(rank_out)
 
     top = sorted(((int(cited_by[i]), names[int(i)]) for i in spine_ids), reverse=True)[:25]
     axiom_dist = Counter(tuple(axioms_of(int(i))) for i in spine_ids)
@@ -325,7 +318,7 @@ def build(snapshot: dict | None = None) -> dict:
         "maxDepth": int(depth.max()),
         "topCited": top,
         "axiomProfiles": {" + ".join(k) if k else "none": v for k, v in axiom_dist.most_common(8)},
-        "searchShards": len(search),
+        "searchShards": n_shards,
     }
     (OUT / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
     return meta

@@ -11,11 +11,12 @@ const EXAMPLES = ["Nat.exists_infinite_primes", "Real.sqrt", "IsCompact", "Polyn
 const shardCache = new Map<string, Promise<SearchEntry[]>>();
 
 function shardKey(q: string): string | null {
-  const tokens = q.toLowerCase().split(/[\s.]+/).filter(Boolean);
+  // Words are split like the index: on whitespace, dots, and underscores.
+  const tokens = q.toLowerCase().split(/[\s._]+/).filter(Boolean);
   const last = tokens[tokens.length - 1];
   if (!last || last.length < 2) return null;
   const k = last.slice(0, 2);
-  return /^[a-z0-9_]{2}$/.test(k) ? k : null;
+  return /^[a-z0-9]{2}$/.test(k) ? k : null;
 }
 
 function loadShard(k: string): Promise<SearchEntry[]> {

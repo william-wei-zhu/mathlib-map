@@ -17,6 +17,7 @@ def main() -> None:
     cl.add_argument("--limit", type=int, default=None, help="only classify this many uncached modules (for a test run)")
     sub.add_parser("map", help="build the Map view data (areas, coverage, overlays) from the classification")
     sub.add_parser("atlas", help="build the Theorems view data (spine graph, ranks, node and search shards)")
+    sub.add_parser("search", help="rebuild the name-search shards from out/atlas/rank.json")
     up = sub.add_parser("upload", help="rsync an out/ subdirectory to the public bucket")
     up.add_argument("subdir", help="e.g. hierarchy")
     up.add_argument("--dry-run", action="store_true")
@@ -57,6 +58,14 @@ def main() -> None:
         from .atlas import build as build_atlas
 
         print(json.dumps(build_atlas(), indent=1))
+    elif args.command == "search":
+        import json
+        from pathlib import Path
+
+        from .search import OUT as ATLAS_OUT, build_search
+
+        rank = json.loads((ATLAS_OUT / "rank.json").read_text(encoding="utf-8"))
+        print("shards:", build_search(rank))
     elif args.command == "upload":
         from .upload import upload
 
