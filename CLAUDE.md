@@ -70,6 +70,12 @@ this file is the running changelog of decisions taken while executing it.
   `site/lib/ramp.ts`, neutral for areas with no listed theorems. Areas with zero declarations are not drawn.
   On phones the treemap is hidden and the ranked table is the map. Category theory being the largest area
   is real (1,575 files), not a classification artifact.
+- **2026-09-02 · The bucket's edge cache can serve stale JSON for up to an hour after an upload**, and a
+  Vercel build prerenders `/` from that JSON. A deploy that requires a brand-new field failed once
+  (`short` missing). Rule: UI code tolerates missing optional fields (`shortName()` fallback), and data is
+  uploaded before the code that reads it is pushed.
+- **2026-09-02 · Area page JSON uses `files` for the file list and `modules` for the count.** They briefly
+  shared the key `modules` and the lead sentence rendered "[object Object]".
 - **2026-09-02 · gcloud needs Python 3.12.** The system gcloud fails on Python 3.9; every gcloud call sets
   `CLOUDSDK_PYTHON=$(uv python find 3.12)`.
 
