@@ -6,7 +6,27 @@ export function AreaTable({ areas }: { areas: AreaSummary[] }) {
   const rows = areas.filter((a) => a.declarations > 0).sort((a, b) => b.declarations - a.declarations);
   const max = rows[0]?.declarations ?? 1;
   return (
-    <div className="overflow-x-auto">
+    <div>
+      {/* Phones: one stacked entry per area instead of a four-column table. */}
+      <ul className="divide-y divide-border sm:hidden">
+        {rows.map((a) => {
+          const c = coverage(a);
+          return (
+            <li key={a.code} className="py-3">
+              <Link href={areaHref(a.code)} className="text-accent-ink underline underline-offset-4 hover:text-foreground">
+                <span className="lean">{a.code}</span> {shortName(a)}
+              </Link>
+              <p className="mt-1 text-sm text-foreground">
+                <span className="tabular-nums">{fmt(a.declarations)}</span> declarations
+                {" · "}
+                {c === null ? "no famous theorems listed" : `${a.famous_mathlib} of ${a.famous_total} famous theorems (${pct(c)})`}
+                {a.conjectures_open > 0 && <> · {fmt(a.conjectures_open)} open conjectures</>}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="hidden overflow-x-auto sm:block">
       <table className="w-full text-sm">
         <thead>
           <tr className="eyebrow text-left text-muted-foreground">
@@ -39,6 +59,7 @@ export function AreaTable({ areas }: { areas: AreaSummary[] }) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
