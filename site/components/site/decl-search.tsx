@@ -115,7 +115,7 @@ export function DeclSearch() {
             {results.map(([name, kind, cited]) => (
               <li key={name} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
                 <Link href={declHref(name)} className="lean break-all text-sm text-accent-ink underline underline-offset-4 hover:text-foreground">{name}</Link>
-                <span className="eyebrow shrink-0 text-muted-foreground">{KIND_LABEL[kind] ?? kind} · cited by {cited.toLocaleString("en-US")}</span>
+                <span className="eyebrow min-w-0 break-words text-muted-foreground">{KIND_LABEL[kind] ?? kind} · cited by {cited.toLocaleString("en-US")}</span>
               </li>
             ))}
           </ul>

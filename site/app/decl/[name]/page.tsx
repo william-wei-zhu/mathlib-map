@@ -39,7 +39,7 @@ function NeighborRow({ n }: { n: Neighbor }) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <Link href={declHref(n.name)} className={`lean break-all text-sm ${link}`}>{n.name}</Link>
-      <span className="eyebrow shrink-0 text-muted-foreground">
+      <span className="eyebrow min-w-0 break-words text-muted-foreground">
         {n.via === "both" ? "statement and proof" : n.via} · cited by {fmt(n.citedBy)}
       </span>
     </div>

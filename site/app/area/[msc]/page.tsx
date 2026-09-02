@@ -181,7 +181,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
             {page.topResults.map((r) => (
               <li key={r.name} className="flex items-baseline justify-between gap-3">
                 <Link href={declHref(r.name)} className={`lean min-w-0 break-all text-sm ${link}`}>{r.name}</Link>
-                <span className="eyebrow shrink-0 text-muted-foreground">{fmt(r.citedBy)}</span>
+                <span className="eyebrow min-w-0 break-words text-muted-foreground">{fmt(r.citedBy)}</span>
               </li>
             ))}
           </ul>
@@ -211,7 +211,7 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
                 <a href={moduleDocsHref(m.module)} target="_blank" rel="noopener noreferrer" className={`lean break-all text-sm ${link}`}>{m.module}</a>
                 {m.title && <p className="text-sm text-foreground">{m.title}</p>}
               </div>
-              <p className="eyebrow shrink-0 text-muted-foreground">
+              <p className="eyebrow min-w-0 break-words text-muted-foreground">
                 <span className="lean">{m.primary}</span> · {fmt(m.declarations)}
               </p>
             </div>
