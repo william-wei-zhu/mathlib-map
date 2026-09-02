@@ -20,6 +20,9 @@ export type AreaSummary = {
   undergrad_missing: number;
   hundred: number;
   subareas: SubareaSummary[];
+  /** Spatial-embedding position [x, y] in the 1200x760 World-map viewBox, from embed.py.
+   *  Absent for areas the embedding could not place; the World map falls back to a size grid. */
+  pos?: [number, number];
 };
 
 export type MapIndex = {

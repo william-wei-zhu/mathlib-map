@@ -87,6 +87,22 @@ this file is the running changelog of decisions taken while executing it.
   because Lean's environment has reference cycles; condensing first gives a true longest path (max 361).
 - **2026-09-02 · gcloud needs Python 3.12.** The system gcloud fails on Python 3.9; every gcloud call sets
   `CLOUDSDK_PYTHON=$(uv python find 3.12)`.
+- **2026-09-02 · Atlas redesign (branch `atlas-redesign`).** Approved plan
+  `~/.claude/plans/act-like-a-world-snug-quail.md`: fold the three view silos into one explorable map
+  (Full canvas SPA, panels not pages). North star: wow through clarity, a real useful map, no hairball
+  (`[[feedback_mathlibmap_north_star]]`). Name stays "Mathlib Map"; "Atlas" is the internal codename.
+  Theorem layer will be a WebGL galaxy backdrop with an SVG focus+context working mode (a sanctioned
+  new exception to "SVG only"; still 2D). First slice done: the World map.
+  `pipeline/mathlibmap/embed.py` computes a 2D spatial embedding of the MSC areas from cross-area
+  citation counts (spectral seed + weighted Fruchterman-Reingold + per-axis fill-stretch + collision),
+  writing `area["pos"]=[x,y]` into `map/index.json` (viewBox 1200x760; radius
+  `sqrt(size/maxsize)*80+20`, matched in the site). Called from `mapview.build` (optional; falls back
+  if the extractor cache is absent). The World map is `site/components/atlas/atlas-canvas.tsx` (organic
+  region blobs with contours, d3-zoom pan/zoom with wheel-zoom disabled so page scroll works,
+  click-to-zoom, coverage/conjecture shading, subarea labels only on the selected region), a full-bleed
+  hero on `/` with the ranked table kept below as the fallback. `frontier-map.tsx` is retained until the
+  SPA shell lands. `data/index.json` needs `mathlibmap upload map` (or re-run embed) before the deployed
+  site shows positions; `pos` is backward-compatible and ignored by the old treemap.
 
 ## Status
 

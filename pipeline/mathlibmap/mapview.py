@@ -238,6 +238,17 @@ def build(snapshot: dict | None = None) -> dict:
         }
         (OUT / "area" / f"{code}.json").write_text(json.dumps(page, separators=(",", ":")), encoding="utf-8")
 
+    # ---- spatial embedding: place related areas near each other for the World map
+    try:
+        from .embed import compute_positions
+
+        pos = compute_positions({a["code"]: a["declarations"] for a in index_areas})
+        for a in index_areas:
+            if a["code"] in pos:
+                a["pos"] = pos[a["code"]]
+    except Exception as exc:  # embedding is optional; the World map falls back without pos
+        print(f"embed: skipped ({exc})")
+
     covered = [a for a in index_areas if a["declarations"] > 0]
     deepest = sorted(covered, key=lambda a: -a["declarations"])[:3]
     gap_candidates = [a for a in covered if a["famous_total"] >= 20]
