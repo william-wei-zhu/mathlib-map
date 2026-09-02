@@ -13,6 +13,7 @@ import { TheoremGraph, type GraphNode } from "./theorem-graph";
 import { SearchBox } from "./search-box";
 import { LayersControl } from "./layers-control";
 import { InfoMenu } from "./info-menu";
+import { MapLegend } from "./map-legend";
 import { track } from "@/lib/analytics";
 
 const MIN_W = 300;
@@ -67,7 +68,14 @@ export function AtlasShell({
   const contentRef = useRef<HTMLDivElement>(null);
 
   const isHome = pathname === "/";
+  const isDecl = pathname.startsWith("/decl");
   const prevPath = useRef<string | null>(null);
+
+  // Keep the theorem graph in the visible map area, never behind the panel: on desktop it starts to
+  // the right of the panel; on mobile the /decl sheet is shortened and the graph sits above it.
+  const graphInset = open
+    ? "top-0 right-0 left-0 sm:left-[calc(var(--sw)+1.5rem)] bottom-[47vh] sm:bottom-0"
+    : "inset-0";
 
   // Collapse on the map home; open the panel when diving in from the map (or on first content load);
   // otherwise preserve the user's manual collapse as they move between content routes.
@@ -168,7 +176,7 @@ export function AtlasShell({
         </div>
       )}
 
-      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} />
+      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} containerClassName={graphInset} />
 
       {/* top: logo + search (full width on mobile, panel-width on desktop) */}
       <div className="pointer-events-none absolute left-3 right-16 top-3 z-30 flex items-center gap-2 sm:right-auto sm:w-[var(--sw)] sm:max-w-[calc(100vw-1.5rem)]">
@@ -188,9 +196,9 @@ export function AtlasShell({
       {/* panel: left card on desktop, bottom sheet on mobile */}
       {open ? (
         <section
-          className="pointer-events-auto absolute z-20 flex flex-col overflow-hidden border border-border bg-card shadow-xl
-            max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:h-[68vh] max-sm:rounded-t-2xl
-            sm:left-3 sm:right-auto sm:top-[4.5rem] sm:bottom-3 sm:w-[var(--sw)] sm:rounded-2xl"
+          className={`pointer-events-auto absolute z-20 flex flex-col overflow-hidden border border-border bg-card shadow-xl
+            max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:rounded-t-2xl ${isDecl ? "max-sm:h-[47vh]" : "max-sm:h-[68vh]"}
+            sm:left-3 sm:right-auto sm:top-[4.5rem] sm:bottom-3 sm:w-[var(--sw)] sm:rounded-2xl`}
         >
           <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden="true" />
           <button
@@ -234,6 +242,9 @@ export function AtlasShell({
       <div className="pointer-events-auto absolute bottom-5 right-5 z-30 sm:bottom-[10.5rem]">
         <LayersControl metric={metric} onMetric={setMetric} />
       </div>
+
+      {/* first-run map grammar primer, world view only */}
+      {isHome && <MapLegend />}
     </div>
   );
 }

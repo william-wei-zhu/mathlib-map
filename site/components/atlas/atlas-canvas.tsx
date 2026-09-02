@@ -93,7 +93,7 @@ export function AtlasCanvas({
 }) {
   const { resolvedTheme } = useTheme();
   const mode: "light" | "dark" = resolvedTheme === "dark" ? "dark" : "light";
-  const [hover, setHover] = useState<{ area: AreaSummary; x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<{ area: AreaSummary; x: number; y: number; w: number; h: number } | null>(null);
   const [scale, setScale] = useState(1);
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
@@ -125,7 +125,10 @@ export function AtlasCanvas({
     const z = zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
       .translateExtent([[0, 0], [W, H]])
-      .filter((ev) => ev.type !== "wheel" && !ev.button)
+      // Wheel-zoom is enabled: the shell is overflow-hidden, so there is no page scroll to protect,
+      // and a Google-Maps-style map should zoom on the wheel. Only the right/middle mouse buttons
+      // are excluded so panning stays on the primary button.
+      .filter((ev) => !ev.button)
       .on("zoom", (ev) => {
         g.attr("transform", ev.transform.toString());
         setScale(ev.transform.k);
@@ -178,8 +181,8 @@ export function AtlasCanvas({
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid meet"
         className="h-full w-full cursor-grab touch-none active:cursor-grabbing"
-        role="img"
-        aria-label="Map of mathematics areas, placed so areas that share theorems sit near each other"
+        role="group"
+        aria-label="Map of mathematics areas: horizontal position groups areas that share theorems, height rises with distance from the axioms, size grows with declaration count."
         onMouseLeave={() => setHover(null)}
       >
         <g ref={gRef}>
@@ -214,7 +217,7 @@ export function AtlasCanvas({
                 }}
                 onMouseMove={(e) => {
                   const r = svgRef.current?.getBoundingClientRect();
-                  if (r) setHover({ area: a, x: e.clientX - r.left, y: e.clientY - r.top });
+                  if (r) setHover({ area: a, x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height });
                 }}
                 onFocus={() => setHover(null)}
               >
@@ -246,8 +249,14 @@ export function AtlasCanvas({
                       return (
                         <g
                           key={lm.name}
-                          className="cursor-pointer"
+                          className="cursor-pointer outline-none"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${label}: cited by ${lm.citedBy}`}
                           onClick={(e) => { e.stopPropagation(); onNode?.(lm.name); }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onNode?.(lm.name); }
+                          }}
                         >
                           {active && <circle cx={nx} cy={ny} r={rr + 5 / scale} fill="none" stroke={inkStroke} strokeWidth={1.8 / scale} />}
                           <circle cx={nx} cy={ny} r={rr} fill={active ? "var(--accent-ink)" : "var(--background)"} stroke="var(--accent-ink)" strokeWidth={1.6 / scale} />
@@ -280,7 +289,7 @@ export function AtlasCanvas({
         </g>
       </svg>
 
-      <div className="absolute bottom-5 right-5 hidden flex-col gap-2 sm:flex">
+      <div className="absolute right-3 top-[4.5rem] z-30 flex flex-col gap-2 sm:right-5 sm:top-auto sm:bottom-5">
         <button type="button" onClick={() => zoomBy(1.6)} aria-label="Zoom in" title="Zoom in" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Plus className="h-5 w-5" /></button>
         <button type="button" onClick={() => zoomBy(1 / 1.6)} aria-label="Zoom out" title="Zoom out" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Minus className="h-5 w-5" /></button>
         <button type="button" onClick={reset} aria-label="Reset view" title="Reset view" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Scan className="h-4 w-4" /></button>
@@ -288,9 +297,12 @@ export function AtlasCanvas({
 
       {hover && !focusCode && (
         <div
-          className="pointer-events-none absolute z-20 max-w-xs rounded-md border border-border bg-popover p-3 text-sm text-foreground shadow-md"
-          style={{ left: Math.min(hover.x + 14, W - 40), top: hover.y + 14 }}
-          role="status"
+          className="pointer-events-none absolute z-20 w-64 max-w-[calc(100vw-1.5rem)] rounded-md border border-border bg-popover p-3 text-sm text-foreground shadow-md"
+          style={{
+            left: Math.max(8, Math.min(hover.x + 14, hover.w - 264)),
+            top: Math.max(8, Math.min(hover.y + 14, hover.h - 96)),
+          }}
+          aria-hidden="true"
         >
           <p className="font-medium">{hover.area.code} · {hover.area.label}</p>
           <p>{fmt(hover.area.declarations)} declarations in {fmt(hover.area.modules)} files</p>
