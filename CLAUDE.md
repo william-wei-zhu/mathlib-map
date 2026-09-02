@@ -139,6 +139,58 @@ this file is the running changelog of decisions taken while executing it.
   "SVG focus+context working mode" half of the theorem layer; the WebGL galaxy backdrop of all
   ~300k nodes (needs the offline `atlas/layout.bin` layout step) is still to come.
 
+- **2026-09-02 · UX/research review pass (branch `review-improvements`).** A head-to-tail design +
+  research review; all its recommendations applied. Frontend:
+  - **Resilience.** `app/global-error.tsx` added and the root layout tolerates a failed
+    `map/index.json` fetch (returns null; `AtlasShell` already degrades), so a bucket hiccup no
+    longer white-screens every route.
+  - **Container-width layout.** Panel routes were authored full-width but render in a 300-720px
+    panel. The panel content wrapper is now an `@container`; headings and grids use container-query
+    variants (`@sm/@lg/@2xl`), so they size to the panel not the viewport. Long Lean identifiers use
+    `break-all` at a smaller base.
+  - **Structures full canvas.** `hierarchy-diagram` portals into a full-canvas overlay
+    (`#atlas-hierarchy-slot`, provided by the shell on `/hierarchy`) over the faint map; controls
+    stay in the panel. Zoom floor lowered to 0.04; node widths are Unicode-aware.
+  - **Theorem graph visibility.** `theorem-graph` takes `containerClassName`; the shell positions it
+    in the visible map area (right of the panel on desktop; above a shortened 47vh sheet on `/decl`
+    and `/hierarchy` mobile) so it is never hidden behind the panel.
+  - **Search.** `app/api/search` filters the prefix shard + hierarchy index server-side (Next data
+    cache); `SearchBox` and `DeclSearch` both call it (one implementation), no multi-MB client
+    download. `/` focuses search; arrow keys navigate results. `autoFocus` dropped on `/search`.
+  - **Map grammar / zoom / a11y.** Wheel-zoom enabled (no page scroll to protect); zoom controls
+    shown on mobile in the top band; a first-run `MapLegend` on the world view + the grammar in the
+    Layers popover; map `<svg>` is `role=group` (was `role=img`, which hid its focusable regions);
+    landmark and graph nodes get roles/keyboard handlers; tooltip clamp uses the measured rect;
+    popovers dismiss on Escape/touch (`lib/use-dismiss`).
+  - **Consolidation.** Deleted `frontier-map`, `header`, `footer`, `nav-links`, `coming-view`, 9
+    unused shadcn primitives (kept `button`), and `public/concept/atlas-mock.html`; `node:crypto`
+    replaced by an inline sha1 in `lib/atlas-data` (no polyfill in the client bundle); snapshot
+    provenance restored to the info menu; `w-screen`->`w-full`; `setPointerCapture` on resize;
+    manual panel-collapse no longer discarded on navigation; `/#map` dead anchor fixed.
+  - **Add: proof-path tracer.** `app/api/path` runs a bounded bidirectional BFS over node shards
+    (proof edges preferred; capped at 300 fetches / depth 14 / 24 neighbors) so "how does A rest on
+    B" returns a chain; `PathTrace` on `/decl` renders it. Reads shards server-side.
+  Pipeline (re-ran `downloads` then `map`; re-uploaded **map** + **root** only, node/search shards
+  unchanged, to avoid a 300k-file upload for one derived number):
+  - **Meaningful map axis (Rec 5).** `embed.py` now sets the World-map **vertical axis = foundational
+    depth** (median spine depth from the axioms, from `atlas.py`'s new `area-depth.json`): advanced
+    areas at the top, foundational at the bottom; horizontal is the spectral relatedness order; a
+    collision pass separates blobs near those targets. Verified Spearman(y, depth) = -0.91. Falls
+    back to the old relatedness-only force layout when depth is absent.
+  - **Proof-citation ranking (Rec 4).** `atlas.py` adds `provenCitedBy` (citations in an explicit
+    proof position) to `rank.json` and node pages; `rank.json` entries are now
+    `[citedBy, kind, provenCitedBy]` (`search.py`/`mapview.py` updated). Area pages rank "Most
+    relied on in proofs" by `provenCitedBy` (theorems only). `meta.json` gains `topProven`.
+  - **Classification honesty (Rec 6).** Area pages surface average confidence and per-file
+    `curated`/`low confidence` markers (data already computed); the About page already states the
+    ~73% agreement. Classification was **not** re-run: results are cached by input hash, so a prompt
+    change alone would not re-classify, and busting the cache costs Vertex AI calls for uncertain
+    gain.
+  - **Chalkboard skin: evaluated and declined** (paper-and-ink is the better metaphor for a dense
+    reference map; a chalk face fights Lean Unicode legibility and reads as spectacle). Not built.
+  New API routes: `app/api/search`, `app/api/path`. New components: `components/atlas/{map-legend,
+  path-trace}.tsx`, `lib/use-dismiss.ts`.
+
 ## Status
 
 - **2026-09-02 · Mobile-friendly + collapsible Layers.** The Layers control is now a small
@@ -155,8 +207,8 @@ this file is the running changelog of decisions taken while executing it.
   logo, and the World -> Region -> Theorem altitudes plus the Structures layer. Built on branch
   `atlas-redesign`, merged to `main`. The map's spatial positions were uploaded to the bucket
   (`mathlibmap upload map`, backward-compatible `pos` field). Still pending: the WebGL galaxy backdrop
-  of all ~300k nodes. `frontier-map.tsx`, `header.tsx`, `footer.tsx`, and `nav-links.tsx` remain in
-  the tree but are unused by the shell.
+  of all ~300k nodes. (The unused `frontier-map.tsx`, `header.tsx`, `footer.tsx`, `nav-links.tsx`,
+  `coming-view.tsx` and 9 unused shadcn primitives were deleted in the 2026-09-02 review pass.)
 - **2026-09-02 · Phase 0 done.** Site live at mathlibmap.com (brand, theme, header, footer, About, Privacy,
   Settings, icons and share image), pipeline fetches every input, bucket public.
 - **2026-09-02 · Phase 1 (Structures) first cut live.** Extractor run on all of Mathlib v4.33.0: 2,408 classes,
