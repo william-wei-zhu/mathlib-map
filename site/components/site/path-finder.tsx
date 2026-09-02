@@ -61,7 +61,7 @@ export function PathFinder({ target, initial }: { target: string; initial?: stri
           placeholder="A type such as Real, or a class"
           spellCheck={false}
           autoCapitalize="off"
-          className="lean h-11 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="lean h-11 w-0 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <button
           type="submit"

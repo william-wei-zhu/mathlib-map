@@ -123,7 +123,7 @@ export function HierarchyExplorer() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <form
-            className="relative"
+            className="relative min-w-0"
             onSubmit={(e) => {
               e.preventDefault();
               setParams({ focus: classQuery.trim() || null, all: null });
@@ -138,7 +138,7 @@ export function HierarchyExplorer() {
                 placeholder="Field, CompleteLattice, TopologicalSpace…"
                 spellCheck={false}
                 autoCapitalize="off"
-                className="lean h-11 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="lean h-11 w-0 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button type="submit" className="inline-flex h-11 items-center rounded-full bg-foreground px-4 font-medium text-background hover:bg-foreground/90">
                 Focus
@@ -164,6 +164,7 @@ export function HierarchyExplorer() {
             )}
           </form>
           <form
+            className="min-w-0"
             onSubmit={(e) => {
               e.preventDefault();
               setParams({ type: typeQuery.trim() || null });
@@ -178,7 +179,7 @@ export function HierarchyExplorer() {
                 placeholder="Real, Complex, Int, ZMod, Matrix…"
                 spellCheck={false}
                 autoCapitalize="off"
-                className="lean h-11 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="lean h-11 w-0 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button type="submit" className="inline-flex h-11 items-center rounded-full border border-foreground px-4 font-medium text-foreground hover:bg-foreground hover:text-background">
                 Light up
