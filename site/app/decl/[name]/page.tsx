@@ -105,7 +105,10 @@ export default async function DeclRoute({ params }: { params: Promise<Params> })
         )}
         <div>
           <dt className="eyebrow text-muted-foreground">Cited by</dt>
-          <dd className="mt-1 text-foreground">{fmt(page.citedBy)} results in Mathlib</dd>
+          <dd className="mt-1 text-foreground">
+            {fmt(page.citedBy)} results in Mathlib
+            {page.provenCitedBy != null && <span className="text-muted-foreground"> · {fmt(page.provenCitedBy)} in an explicit proof</span>}
+          </dd>
         </div>
         <div>
           <dt className="eyebrow text-muted-foreground">Foundations</dt>

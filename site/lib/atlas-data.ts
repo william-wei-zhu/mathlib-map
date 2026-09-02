@@ -49,6 +49,8 @@ export type NodePage = {
   deprecated: { to: string | null; since: string | null } | null;
   famous: string[];
   citedBy: number;
+  /** Citations in an explicit proof position (added 2026-09-02); optional for shards written before. */
+  provenCitedBy?: number;
   rank: number;
   depth: number;
   axioms: string[];
