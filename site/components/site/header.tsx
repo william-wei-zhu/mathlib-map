@@ -14,13 +14,13 @@ export function Header() {
             {SITE_NAME}
           </span>
         </Link>
-        <div className="order-last flex w-full items-center justify-between gap-3 sm:order-none sm:w-auto">
+        <div className="order-last flex w-full min-w-0 items-center justify-between gap-2 sm:order-none sm:w-auto sm:gap-3">
           <NavLinks />
           <Link
             href="/settings"
             aria-label="Settings"
             title="Settings"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-foreground/40 text-foreground transition-colors hover:border-foreground"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/40 text-foreground transition-colors hover:border-foreground"
           >
             <Settings className="h-5 w-5" />
           </Link>

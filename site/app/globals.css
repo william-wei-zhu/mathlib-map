@@ -186,19 +186,22 @@
   }
 }
 
-/* Small uppercase tracked label, in mono. */
-.eyebrow {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.76rem;
-  font-weight: 500;
-}
+/* In the components layer so Tailwind utilities can override size and tracking per breakpoint. */
+@layer components {
+  /* Small uppercase tracked label, in mono. */
+  .eyebrow {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.76rem;
+    font-weight: 500;
+  }
 
-/* Lean identifiers and statements. */
-.lean {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-feature-settings: "liga" 0, "calt" 0;
+  /* Lean identifiers and statements. */
+  .lean {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-feature-settings: "liga" 0, "calt" 0;
+  }
 }
 
 /* One-shot entrance used on the home page. */
