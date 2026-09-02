@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { classHref } from "@/lib/data";
@@ -32,6 +33,10 @@ export function HierarchyExplorer() {
   const [state, setState] = useState<State>({ status: "loading" });
   const [classQuery, setClassQuery] = useState(focus ?? "");
   const [typeQuery, setTypeQuery] = useState(type ?? "");
+  // The diagram renders into a full-canvas overlay (provided by AtlasShell on /hierarchy) so the
+  // 80-node layout is legible, while these controls stay in the panel. Falls back to inline.
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => { setSlot(document.getElementById("atlas-hierarchy-slot")); }, [state.status]);
 
   useEffect(() => {
     let alive = true;
@@ -228,9 +233,12 @@ export function HierarchyExplorer() {
         )}
       </div>
 
-      <div className="mt-4">
-        <HierarchyDiagram graph={graph} ids={ids} focus={focus && graph.byId.has(focus) ? focus : null} highlight={typeKnown ? highlight : null} />
-      </div>
+      {(() => {
+        const diagram = (
+          <HierarchyDiagram graph={graph} ids={ids} focus={focus && graph.byId.has(focus) ? focus : null} highlight={typeKnown ? highlight : null} />
+        );
+        return slot ? createPortal(diagram, slot) : <div className="mt-4 h-[60vh]">{diagram}</div>;
+      })()}
       <p className="eyebrow mt-3 text-muted-foreground">Solid: extends · Dashed: forgetful instance · More general classes sit higher</p>
     </div>
   );

@@ -69,11 +69,14 @@ export function AtlasShell({
 
   const isHome = pathname === "/";
   const isDecl = pathname.startsWith("/decl");
+  const isHierarchy = pathname === "/hierarchy";
+  const usesOverlay = isDecl || isHierarchy; // routes whose payload is a full-canvas overlay
   const prevPath = useRef<string | null>(null);
 
-  // Keep the theorem graph in the visible map area, never behind the panel: on desktop it starts to
-  // the right of the panel; on mobile the /decl sheet is shortened and the graph sits above it.
-  const graphInset = open
+  // Keep an overlay (theorem graph, structures diagram) in the visible map area, never behind the
+  // panel: on desktop it starts to the right of the panel; on mobile the sheet is shortened and the
+  // overlay sits above it.
+  const overlayInset = open
     ? "top-0 right-0 left-0 sm:left-[calc(var(--sw)+1.5rem)] bottom-[47vh] sm:bottom-0"
     : "inset-0";
 
@@ -176,7 +179,15 @@ export function AtlasShell({
         </div>
       )}
 
-      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} containerClassName={graphInset} />
+      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} containerClassName={overlayInset} />
+
+      {/* structures diagram renders here (portaled by HierarchyExplorer) over the faint map */}
+      {isHierarchy && (
+        <div className={`pointer-events-none absolute z-10 ${overlayInset}`}>
+          <div className="absolute inset-0 bg-background/55 backdrop-blur-[1px]" />
+          <div id="atlas-hierarchy-slot" className="pointer-events-auto absolute inset-0" />
+        </div>
+      )}
 
       {/* top: logo + search (full width on mobile, panel-width on desktop) */}
       <div className="pointer-events-none absolute left-3 right-16 top-3 z-30 flex items-center gap-2 sm:right-auto sm:w-[var(--sw)] sm:max-w-[calc(100vw-1.5rem)]">
@@ -197,7 +208,7 @@ export function AtlasShell({
       {open ? (
         <section
           className={`pointer-events-auto absolute z-20 flex flex-col overflow-hidden border border-border bg-card shadow-xl
-            max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:rounded-t-2xl ${isDecl ? "max-sm:h-[47vh]" : "max-sm:h-[68vh]"}
+            max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:rounded-t-2xl ${usesOverlay ? "max-sm:h-[47vh]" : "max-sm:h-[68vh]"}
             sm:left-3 sm:right-auto sm:top-[4.5rem] sm:bottom-3 sm:w-[var(--sw)] sm:rounded-2xl`}
         >
           <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden="true" />
