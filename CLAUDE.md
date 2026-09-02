@@ -49,8 +49,26 @@ this file is the running changelog of decisions taken while executing it.
   until the pipeline writes `graph/meta.json`; the footer reads it. mathlib-types on HuggingFace is at
   `types-v4.33.0`; MathNetwork's graph is at commit 534cf0b (2026-02-02, v4.28.0-rc1). Phase 3 replaces
   the MathNetwork edges with our own extractor output so all layers share one tag.
+- **2026-09-02 · Family view shows the 80 most-used classes by default** (`assumedBy + instances`), with a
+  "Show all N" toggle; Algebra alone has 342 visible unary classes and a full layout of that is slow and
+  unreadable. Focus mode (ancestors + descendants of one class) is the intended way to read the diagram.
+- **2026-09-02 · The hierarchy index carries only direct instances per type** (one witnessing instance per
+  class); closures are recomputed client-side, which keeps the index at 1.5 MB instead of several.
 - **2026-09-02 · gcloud needs Python 3.12.** The system gcloud fails on Python 3.9; every gcloud call sets
   `CLOUDSDK_PYTHON=$(uv python find 3.12)`.
+
+## Status
+
+- **2026-09-02 · Phase 0 done.** Site live at mathlibmap.com (brand, theme, header, footer, About, Privacy,
+  Settings, icons and share image), pipeline fetches every input, bucket public.
+- **2026-09-02 · Phase 1 (Structures) first cut live.** Extractor run on all of Mathlib v4.33.0: 2,408 classes,
+  42,904 instances, 349,828 declarations, 101 s wall clock, 5.9 GB peak RSS. Hierarchy build: 2,109 visible
+  classes, 1,038 `extends` edges, 438 forgetful-instance edges, 5,009 concrete types; `hierarchy/index.json`
+  is 1.5 MB (gzipped by the bucket). Sanity checks pass: `Field` extends `CommRing` and `DivisionRing`,
+  `Real` satisfies 298 classes, `CommRing` is assumed by 28,164 declarations.
+  Routes: `/hierarchy` (family tabs, focus, type highlight, elkjs layered layout in `hierarchy-diagram.tsx`)
+  and `/class/[name]` (server-rendered from `hierarchy/classes/<name>.json`, path finder client-side from
+  the index). Data contract lives in `site/lib/data.ts` and `site/lib/hierarchy-client.ts`.
 
 ## Data sources (verified 2026-09-02)
 

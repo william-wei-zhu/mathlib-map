@@ -14,7 +14,7 @@ const VIEWS = [
     href: "/hierarchy",
     title: "How Mathlib's algebraic and topological structures fit together.",
     body: "The typeclass hierarchy as one navigable diagram, from Monoid to Field and beyond, with a path finder that shows why a real number is an instance of any class.",
-    status: "Ships first",
+    status: "Live",
   },
   {
     label: "Theorems",
@@ -64,8 +64,8 @@ export default function HomePage() {
 
       <section className="mt-16 flex flex-col items-start gap-4 border-t border-border pt-10 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-xl text-base text-foreground">
-          This site is being built in the open. The Structures view lands first, then the Map,
-          then Theorems.
+          This site is being built in the open. Structures is live; the Map and Theorems views
+          are next.
         </p>
         <a
           href={GITHUB_REPO_URL}
