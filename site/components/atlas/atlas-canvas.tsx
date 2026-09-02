@@ -200,7 +200,6 @@ export function AtlasCanvas({
             const blockH = lines.length * lineH + (showCount ? nameSize * 0.9 : 0);
             const startY = p.y - blockH / 2 + nameSize * 0.82;
             const seed = i * 1.3 + 0.4;
-            const showLandmarks = isSel && landmarks.length > 0;
             return (
               <g
                 key={a.code}
@@ -229,11 +228,13 @@ export function AtlasCanvas({
                 />
                 <path d={blobPath(p.x, p.y, p.r * 0.58, seed + 0.5)} className="fill-none" stroke={inkStroke} strokeWidth={0.8 / scale} opacity={0.1} />
 
-                {showLandmarks ? (
+                {isSel ? (
                   <>
-                    <text x={p.x} y={p.y - p.r + 34 / scale} textAnchor="middle" fontWeight={600} fontSize={24 / scale} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
-                      {shortName(a)}
-                    </text>
+                    {!activeNode && (
+                      <text x={p.x} y={p.y - p.r + 34 / scale} textAnchor="middle" fontWeight={600} fontSize={24 / scale} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                        {shortName(a)}
+                      </text>
+                    )}
                     {landmarks.map((lm, li) => {
                       const ang = li * 2.399963;
                       const rad = p.r * 0.72 * Math.sqrt((li + 0.7) / landmarks.length);

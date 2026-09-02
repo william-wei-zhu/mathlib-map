@@ -129,6 +129,15 @@ this file is the running changelog of decisions taken while executing it.
   `/scale`) in a spiral inside the blob, labeled by last name segment, click routes to `/decl`. Map
   polish: `embed.py` now adds a gravity term + isotropic fit (no stranded areas); region labels wrap
   instead of truncating.
+- **2026-09-02 · Atlas redesign phase 4 (working mode): theorem focus+context graph.**
+  `components/atlas/theorem-graph.tsx` draws a declaration's dependency neighbourhood over the
+  (faint, scrimmed) map when on `/decl`: the current node centred, what it cites below, what cites
+  it above, dashed edges for statement dependencies and solid for proof citations, nodes sized by
+  citations and clickable to re-centre (walk the graph). The shell fetches the node shard's
+  `uses`/`usedBy` into `nodeData` and renders the overlay; on `/decl` the area's landmark nodes and
+  title are suppressed so the graph is the focus with the region as a plain backdrop. This is the
+  "SVG focus+context working mode" half of the theorem layer; the WebGL galaxy backdrop of all
+  ~300k nodes (needs the offline `atlas/layout.bin` layout step) is still to come.
 
 ## Status
 

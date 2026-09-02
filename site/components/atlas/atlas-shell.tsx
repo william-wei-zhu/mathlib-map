@@ -9,6 +9,7 @@ import { DATA_BASE_URL } from "@/lib/site";
 import { areaHref, type MapIndex } from "@/lib/map-data";
 import { declHref, nodeShardPath } from "@/lib/atlas-data";
 import { AtlasCanvas, type Metric, type Landmark } from "./atlas-canvas";
+import { TheoremGraph, type GraphNode } from "./theorem-graph";
 import { SearchBox } from "./search-box";
 import { LayersControl } from "./layers-control";
 import { InfoMenu } from "./info-menu";
@@ -52,6 +53,7 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
   const [focusCode, setFocusCode] = useState<string | null>(null);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [activeNode, setActiveNode] = useState<string | null>(null);
+  const [nodeData, setNodeData] = useState<GraphNode | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const isHome = pathname === "/";
@@ -70,20 +72,25 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
       const decl = declNameOf(pathname);
       if (area) {
         setActiveNode(null);
+        setNodeData(null);
         setFocusCode(area);
         const lm = await fetchLandmarks(area);
         if (alive) setLandmarks(lm);
       } else if (decl) {
-        const node = (await getJson(`${DATA_BASE_URL}/${nodeShardPath(decl)}`)) as { area?: { code?: string } } | null;
+        const node = (await getJson(`${DATA_BASE_URL}/${nodeShardPath(decl)}`)) as
+          | { area?: { code?: string }; name?: string; kind?: string; uses?: GraphNode["uses"]; usedBy?: GraphNode["usedBy"] }
+          | null;
         if (!alive) return;
         const code = node?.area?.code ?? null;
         setActiveNode(decl);
         setFocusCode(code);
-        setLandmarks(code ? await fetchLandmarks(code) : []);
+        setNodeData(node ? { name: node.name ?? decl, kind: node.kind ?? "theorem", uses: node.uses ?? [], usedBy: node.usedBy ?? [] } : null);
+        setLandmarks([]); // the theorem graph is the focus here, not the area's landmarks
       } else {
         setFocusCode(null);
         setLandmarks([]);
         setActiveNode(null);
+        setNodeData(null);
       }
     })();
     return () => { alive = false; };
@@ -137,6 +144,8 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
           The map data is unavailable right now.
         </div>
       )}
+
+      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} />
 
       {/* left column: logo + search, then the sidebar panel */}
       <div
