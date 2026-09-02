@@ -5,6 +5,7 @@ import { classHref, fetchShard, mathlibDocsHref, moduleDocsHref } from "@/lib/da
 import { coverage, fmt, pct, shortName, type AreaPage } from "@/lib/map-data";
 import { GITHUB_REPO_URL } from "@/lib/site";
 import { PagedList } from "@/components/site/paged-list";
+import { declHref } from "@/lib/atlas-data";
 
 type Params = { msc: string };
 
@@ -171,6 +172,19 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
               </ul>
             </div>
           ))}
+        </Section>
+      )}
+
+      {page.topResults && page.topResults.length > 0 && (
+        <Section title="Most cited results" count={String(page.topResults.length)} intro="Declarations in this area that other Mathlib results cite most.">
+          <ul className="grid gap-1.5 sm:grid-cols-2">
+            {page.topResults.map((r) => (
+              <li key={r.name} className="flex items-baseline justify-between gap-3">
+                <Link href={declHref(r.name)} className={`lean min-w-0 break-all text-sm ${link}`}>{r.name}</Link>
+                <span className="eyebrow shrink-0 text-muted-foreground">{fmt(r.citedBy)}</span>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 

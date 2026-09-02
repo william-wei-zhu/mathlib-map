@@ -52,6 +52,8 @@ export type AreaPage = Omit<AreaSummary, "subareas"> & {
   conjectures: { name: string; category: "open" | "solved"; collection: string | null; url: string | null }[];
   undergrad: { chapter: string; total: number; missing: number; missingTopics: string[] }[];
   classes: { id: string; assumedBy: number; instances: number }[];
+  /** Most cited results in this area, from the Theorems build; absent until it has run. */
+  topResults?: { name: string; citedBy: number }[];
 };
 
 /** Short name with a fallback for data written before the field existed. */

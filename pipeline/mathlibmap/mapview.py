@@ -168,6 +168,23 @@ def build(snapshot: dict | None = None) -> dict:
                 "missingTopics": [t["topic"] for t in topics if t["decl"] is None],
             })
 
+    # ---- most cited results per area (from the Theorems build, if it has run)
+    rank_path = ROOT / "out" / "atlas" / "rank.json"
+    top_by_area: dict[str, list[dict]] = defaultdict(list)
+    if rank_path.exists():
+        rank = json.loads(rank_path.read_text(encoding="utf-8"))
+        best: dict[str, list[tuple[int, str]]] = defaultdict(list)
+        for nm, (cited, kind) in rank.items():
+            if kind != "theorem":
+                continue
+            mod = decl_mod.get(nm)
+            a = area_of_module(mod) if mod else None
+            if a:
+                best[a].append((cited, nm))
+        for a, lst in best.items():
+            lst.sort(reverse=True)
+            top_by_area[a] = [{"name": nm, "citedBy": c} for c, nm in lst[:24]]
+
     # ---- structures per area
     hier = json.loads((ROOT / "out" / "hierarchy" / "index.json").read_text(encoding="utf-8"))
     classes_by_area: dict[str, list[dict]] = defaultdict(list)
@@ -217,6 +234,7 @@ def build(snapshot: dict | None = None) -> dict:
             "conjectures": sorted(conj, key=lambda c: (c["category"] != "open", c["name"]))[:400],
             "undergrad": ug_ch,
             "classes": sorted(classes_by_area.get(code, []), key=lambda c: -c["assumedBy"])[:24],
+            "topResults": top_by_area.get(code, []),
         }
         (OUT / "area" / f"{code}.json").write_text(json.dumps(page, separators=(",", ":")), encoding="utf-8")
 

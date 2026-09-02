@@ -16,6 +16,7 @@ def main() -> None:
     cl = sub.add_parser("classify", help="classify Mathlib modules into MSC2020 areas with Gemini (cached)")
     cl.add_argument("--limit", type=int, default=None, help="only classify this many uncached modules (for a test run)")
     sub.add_parser("map", help="build the Map view data (areas, coverage, overlays) from the classification")
+    sub.add_parser("atlas", help="build the Theorems view data (spine graph, ranks, node and search shards)")
     up = sub.add_parser("upload", help="rsync an out/ subdirectory to the public bucket")
     up.add_argument("subdir", help="e.g. hierarchy")
     up.add_argument("--dry-run", action="store_true")
@@ -50,6 +51,12 @@ def main() -> None:
         from .mapview import build as build_map
 
         print(json.dumps(build_map(), indent=1))
+    elif args.command == "atlas":
+        import json
+
+        from .atlas import build as build_atlas
+
+        print(json.dumps(build_atlas(), indent=1))
     elif args.command == "upload":
         from .upload import upload
 

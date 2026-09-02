@@ -100,7 +100,8 @@ export default async function HomePage() {
 
       <section className="mt-16 flex flex-col items-start gap-4 border-t border-border pt-10 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-xl text-base text-foreground">
-          This site is being built in the open. Map and Structures are live; Theorems is next.
+          All three views are live and refresh with each Mathlib release. Start with a guided descent:{" "}
+          <Link href="/tour/bertrand" className="text-accent-ink underline underline-offset-4 hover:text-foreground">what does Bertrand&apos;s postulate rest on?</Link>
         </p>
         <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-full border border-foreground px-5 font-medium text-foreground transition-colors hover:bg-foreground hover:text-background">
           Follow the build on GitHub

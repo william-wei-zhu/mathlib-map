@@ -78,6 +78,12 @@ this file is the running changelog of decisions taken while executing it.
   before the code that reads it is pushed.
 - **2026-09-02 · Area page JSON uses `files` for the file list and `modules` for the count.** They briefly
   shared the key `modules` and the lead sentence rendered "[object Object]".
+- **2026-09-02 · Tour anchored on Bertrand's postulate, not the Prime Number Theorem.** Mathlib v4.33.0 has
+  Chebyshev's bounds on π(x) but the PNT itself lives in the external PNT+ project, so the first tour descends
+  from `Nat.bertrand` (a complete, famous, in-Mathlib chain). Tours are data in `site/lib/tours.ts`; every
+  name in a tour must exist in the extraction.
+- **2026-09-02 · Depth is computed on the SCC condensation.** The first run hit the iteration cap (400)
+  because Lean's environment has reference cycles; condensing first gives a true longest path (max 361).
 - **2026-09-02 · gcloud needs Python 3.12.** The system gcloud fails on Python 3.9; every gcloud call sets
   `CLOUDSDK_PYTHON=$(uv python find 3.12)`.
 
@@ -101,6 +107,14 @@ this file is the running changelog of decisions taken while executing it.
   Lean. Deepest: 18 category theory, 06 order, 20 groups. Widest gap: 37 dynamical systems (0 of 24).
   Classification agreement with the 1000+ list at the 2-digit level: 139/190 (73%), see
   `docs/msc-classification.md`. Routes: `/` (treemap, ranked table, headline) and `/area/[msc]`.
+
+- **2026-09-02 · Phase 3 (Theorems) first cut live.** `lake exe extractor --mode deps` (771,129 constants,
+  80 s) then `uv run mathlibmap atlas`: 300,710 spine declarations, 3.18M filtered edges, axioms and depth
+  over the full graph (see `docs/atlas.md`). Routes: `/decl/[name]` (statement, docstring, cites and cited-by
+  ranked by citations, star, foundations), `/search` (client-side prefix shards, Loogle deep link),
+  `/tour/bertrand` (eleven verified steps from `Nat.bertrand` to `Nat.Prime`). Area pages gained "most cited
+  results" and class pages sort "assumed by" by citations (`rank.json`). Not built yet: the `/api/graph`
+  closure and path endpoints; transitive definition counts exist for the 3,000 most cited nodes only.
 
 ## Data sources (verified 2026-09-02)
 

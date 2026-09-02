@@ -129,7 +129,7 @@ def build(ndjson: Path, out: Path = OUT, snapshot: dict | None = None) -> dict:
             last = rec["name"].rsplit(".", 1)[-1]
             if last in ("mk", "rec", "recOn", "casesOn", "noConfusion", "noConfusionType", "inj", "injEq", "sizeOf_spec", "ext", "ext_iff"):
                 continue
-            for c in rec.get("assumes", []):
+            for c in set(rec.get("assumes", [])):
                 assumes[c].append(rec["name"])
 
     # Edges
@@ -197,6 +197,12 @@ def build(ndjson: Path, out: Path = OUT, snapshot: dict | None = None) -> dict:
     type_rank = {t["id"]: i for i, t in enumerate(types_out)}
 
     hidden = lambda n, c: (c.get("module") or "").startswith(HIDE_PREFIXES) or n.startswith(HIDE_PREFIXES)  # noqa: E731
+
+    # Citation counts from the Theorems build (if it has run) order the "assumed by" samples.
+    rank_path = Path(__file__).resolve().parent.parent / "out" / "atlas" / "rank.json"
+    rank = json.loads(rank_path.read_text(encoding="utf-8")) if rank_path.exists() else {}
+    for c, lst in assumes.items():
+        lst.sort(key=lambda nm: -(rank.get(nm) or [0])[0])
 
     index_classes = []
     for name, c in sorted(classes.items()):

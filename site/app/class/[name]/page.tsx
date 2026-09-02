@@ -5,6 +5,7 @@ import { classHref, fetchShard, mathlibDocsHref, moduleDocsHref, type ClassPage 
 import { FAMILY_LABELS } from "@/lib/families";
 import { PathFinder } from "@/components/site/path-finder";
 import { DocText } from "@/components/site/doc-text";
+import { declHref } from "@/lib/atlas-data";
 
 type Params = { name: string };
 
@@ -156,9 +157,9 @@ export default async function ClassPageRoute({ params }: { params: Promise<Param
           <ul className="grid gap-1.5 sm:grid-cols-2">
             {page.assumedBy.sample.map((d) => (
               <li key={d}>
-                <a href={mathlibDocsHref(d)} target="_blank" rel="noopener noreferrer" className="lean break-all text-sm text-accent-ink underline underline-offset-4 hover:text-foreground">
+                <Link href={declHref(d)} className="lean break-all text-sm text-accent-ink underline underline-offset-4 hover:text-foreground">
                   {d}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
