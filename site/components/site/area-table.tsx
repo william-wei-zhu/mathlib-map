@@ -23,7 +23,7 @@ export function AreaTable({ areas }: { areas: AreaSummary[] }) {
               <tr key={a.code} className="border-t border-border">
                 <td className="py-2.5 pr-3">
                   <Link href={areaHref(a.code)} className="text-accent-ink underline underline-offset-4 hover:text-foreground">
-                    <span className="lean">{a.code}</span> {a.label}
+                    <span className="lean">{a.code}</span> {a.short}
                   </Link>
                 </td>
                 <td className="py-2.5 pr-3">

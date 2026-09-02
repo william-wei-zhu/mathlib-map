@@ -194,7 +194,7 @@ export function FrontierMap({ index }: { index: MapIndex }) {
                     })}
                   {w > 44 && h > 26 && (
                     <text x={n.x0 + 7} y={n.y0 + 7 + fontSize} fontSize={fontSize} fontWeight={600} className={ink === "paper" ? "fill-background" : "fill-foreground"} style={{ fontFamily: "var(--font-mono)" }}>
-                      {truncate(a.label, maxChars)}
+                      {truncate(a.short, maxChars)}
                     </text>
                   )}
                   {w > 60 && h > 26 + fontSize * 1.6 && (

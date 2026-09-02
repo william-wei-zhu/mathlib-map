@@ -72,6 +72,7 @@ def decl_module_map(ndjson: Path) -> dict[str, str]:
 
 def build(snapshot: dict | None = None) -> dict:
     areas_lbl, sub_lbl = load_msc()
+    short = {str(k).zfill(2): v for k, v in (_yaml(CURATED / "msc-short-names.yaml") or {}).items()}
     cls = json.loads((ROOT / "out" / "msc" / "modules.json").read_text(encoding="utf-8"))["modules"]
     decl_mod = decl_module_map(CACHE / "extract" / "mathlib.ndjson")
 
@@ -192,6 +193,7 @@ def build(snapshot: dict | None = None) -> dict:
         entry = {
             "code": code,
             "label": areas_lbl[code],
+            "short": short.get(code, areas_lbl[code].split(";")[0].split(",")[0].lower()),
             "declarations": sum(m["declarations"] for m in mods),
             "theorems": sum(m["theorems"] for m in mods),
             "definitions": sum(m["definitions"] for m in mods),

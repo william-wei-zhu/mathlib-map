@@ -59,7 +59,8 @@ export default async function AreaRoute({ params }: { params: Promise<Params> })
       <p className="eyebrow text-accent-ink">
         <Link href="/#map" className="underline underline-offset-4 hover:text-foreground">Map</Link> · <span className="lean">{page.code}</span>
       </p>
-      <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-foreground sm:text-6xl">{page.label}</h1>
+      <h1 className="mt-4 font-display text-4xl capitalize leading-tight tracking-tight text-foreground sm:text-6xl">{page.short}</h1>
+      <p className="eyebrow mt-3 text-muted-foreground">MSC {page.code} · {page.label}</p>
       <p className="mt-5 text-lg text-foreground">
         {fmt(page.declarations)} declarations ({fmt(page.theorems)} theorems, {fmt(page.definitions)} definitions) across {fmt(page.modules)} files.
         {page.famous_total > 0 ? (

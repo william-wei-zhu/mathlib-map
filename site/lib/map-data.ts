@@ -5,6 +5,8 @@ export type SubareaSummary = { code: string; label: string; declarations: number
 export type AreaSummary = {
   code: string;
   label: string;
+  /** Curated short name for tiles, tables, and prose; `label` is the official MSC heading. */
+  short: string;
   declarations: number;
   theorems: number;
   definitions: number;

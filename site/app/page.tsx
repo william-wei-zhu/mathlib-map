@@ -32,14 +32,14 @@ function Headline({ index }: { index: MapIndex }) {
   const gap = index.headline.widestGap ? byCode.get(index.headline.widestGap) : null;
   const t = index.totals;
   const overall = t.famous_total > 0 ? t.famous_mathlib / t.famous_total : 0;
-  const names = deepest.map((a) => a!.label.toLowerCase());
+  const names = deepest.map((a) => a!.short);
   const list = names.length === 3 ? `${names[0]}, ${names[1]}, and ${names[2]}` : names.join(", ");
   return (
     <p className="mt-6 max-w-3xl text-lg text-foreground">
       Mathlib is deepest in {list}. It has formalized {fmt(t.famous_mathlib)} of the {fmt(t.famous_total)} theorems on the 1000+ list ({pct(overall)}), and touches {t.areas_covered} of the {t.areas_total} areas of mathematics.
       {gap && (
         <>
-          {" "}The widest gap is {gap.label.toLowerCase()}: {gap.famous_mathlib} of its {gap.famous_total} famous theorems are in Mathlib ({pct(coverage(gap) ?? 0)}).
+          {" "}The widest gap is {gap.short}: {gap.famous_mathlib} of its {gap.famous_total} famous theorems are in Mathlib ({pct(coverage(gap) ?? 0)}).
         </>
       )}
     </p>
