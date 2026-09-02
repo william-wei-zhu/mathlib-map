@@ -231,16 +231,16 @@ export function AtlasCanvas({
 
                 {showLandmarks ? (
                   <>
-                    <text x={p.x} y={p.y - p.r + 20 / scale} textAnchor="middle" fontWeight={600} fontSize={13 / scale} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                    <text x={p.x} y={p.y - p.r + 34 / scale} textAnchor="middle" fontWeight={600} fontSize={24 / scale} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
                       {shortName(a)}
                     </text>
                     {landmarks.map((lm, li) => {
                       const ang = li * 2.399963;
-                      const rad = p.r * 0.6 * Math.sqrt((li + 0.6) / landmarks.length);
+                      const rad = p.r * 0.72 * Math.sqrt((li + 0.7) / landmarks.length);
                       const nx = p.x + Math.cos(ang) * rad;
-                      const ny = p.y + Math.sin(ang) * rad + p.r * 0.06;
+                      const ny = p.y + Math.sin(ang) * rad + p.r * 0.14;
                       const active = activeNode === lm.name;
-                      const rr = (active ? 8 : 5.5) / scale + Math.sqrt(lm.citedBy) / (26 * scale);
+                      const rr = (active ? 10 : 7) / scale + Math.sqrt(lm.citedBy) / (18 * scale);
                       const label = lm.name.split(".").pop() ?? lm.name;
                       return (
                         <g
@@ -248,9 +248,9 @@ export function AtlasCanvas({
                           className="cursor-pointer"
                           onClick={(e) => { e.stopPropagation(); onNode?.(lm.name); }}
                         >
-                          {active && <circle cx={nx} cy={ny} r={rr + 4 / scale} fill="none" stroke="var(--accent-ink)" strokeWidth={1.4 / scale} />}
-                          <circle cx={nx} cy={ny} r={rr} fill="var(--accent-ink)" stroke="var(--background)" strokeWidth={1.2 / scale} />
-                          <text x={nx} y={ny - rr - 3 / scale} textAnchor="middle" fontSize={9 / scale} fill={active ? "var(--accent-ink)" : "var(--foreground)"} style={{ fontFamily: "var(--font-mono)" }}>
+                          {active && <circle cx={nx} cy={ny} r={rr + 5 / scale} fill="none" stroke={inkStroke} strokeWidth={1.8 / scale} />}
+                          <circle cx={nx} cy={ny} r={rr} fill={active ? "var(--accent-ink)" : "var(--background)"} stroke="var(--accent-ink)" strokeWidth={1.6 / scale} />
+                          <text x={nx} y={ny - rr - 4 / scale} textAnchor="middle" fontSize={12.5 / scale} fontWeight={active ? 600 : 400} fill={inkStroke} style={{ fontFamily: "var(--font-mono)" }}>
                             {label}
                           </text>
                         </g>
@@ -258,18 +258,20 @@ export function AtlasCanvas({
                     })}
                   </>
                 ) : (
-                  <>
-                    {lines.map((ln, li) => (
-                      <text key={li} x={p.x} y={startY + li * lineH} textAnchor="middle" fontWeight={600} fontSize={nameSize} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
-                        {ln}
-                      </text>
-                    ))}
-                    {showCount && (
-                      <text x={p.x} y={startY + lines.length * lineH + nameSize * 0.1} textAnchor="middle" fontSize={nameSize * 0.6} className={inkVar} style={{ fontFamily: "var(--font-mono)", opacity: 0.85 }}>
-                        {fmt(a.declarations)}
-                      </text>
-                    )}
-                  </>
+                  !focusCode && (
+                    <>
+                      {lines.map((ln, li) => (
+                        <text key={li} x={p.x} y={startY + li * lineH} textAnchor="middle" fontWeight={600} fontSize={nameSize} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                          {ln}
+                        </text>
+                      ))}
+                      {showCount && (
+                        <text x={p.x} y={startY + lines.length * lineH + nameSize * 0.1} textAnchor="middle" fontSize={nameSize * 0.6} className={inkVar} style={{ fontFamily: "var(--font-mono)", opacity: 0.85 }}>
+                          {fmt(a.declarations)}
+                        </text>
+                      )}
+                    </>
+                  )
                 )}
               </g>
             );

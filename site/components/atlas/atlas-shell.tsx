@@ -40,7 +40,7 @@ async function getJson(url: string): Promise<unknown> {
 
 async function fetchLandmarks(code: string): Promise<Landmark[]> {
   const data = (await getJson(`${DATA_BASE_URL}/map/area/${code}.json`)) as { topResults?: Landmark[] } | null;
-  return (data?.topResults ?? []).slice(0, 8);
+  return (data?.topResults ?? []).slice(0, 18);
 }
 
 export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; children: React.ReactNode }) {
