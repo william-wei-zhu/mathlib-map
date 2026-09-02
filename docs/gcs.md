@@ -19,10 +19,12 @@ export CLOUDSDK_PYTHON=$(uv python find 3.12)
 gcloud config set project mathlibmap
 ```
 
-**Upload with cache headers** (the pipeline does this; for a manual test):
+**Upload with cache headers** (the pipeline does this via `mathlibmap upload`, gzipped, with
+`max-age=600`; the same 600 s that `fetchShard` revalidates against, so the two caches stay in step. For a
+manual test):
 
 ```bash
-gcloud storage cp local.json gs://mathlibmap-data/path/file.json --cache-control="public, max-age=86400"
+gcloud storage cp local.json gs://mathlibmap-data/path/file.json --cache-control="public, max-age=600"
 curl -sI https://storage.googleapis.com/mathlibmap-data/path/file.json | head -3
 ```
 

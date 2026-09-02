@@ -1,5 +1,6 @@
 # extractor
 
-A Lean 4 Lake project (Phase 1) that imports Mathlib and writes newline-delimited JSON describing
-classes, instances, typeclass assumptions, explicit premises, axioms, and deprecations. Pinned to the
-Mathlib tag named in `site/lib/snapshot.ts`.
+A Lean 4 Lake project that imports Mathlib and writes newline-delimited JSON. `--mode records` (default)
+describes classes, instances, typeclass assumptions, and deprecations (Structures and Map views);
+`--mode deps` writes the per-constant dependency edges (Theorems view). Pinned to the Mathlib tag named in
+`site/lib/snapshot.ts`. See `docs/extractor.md` and `docs/atlas.md`.

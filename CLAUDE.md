@@ -18,7 +18,8 @@ this file is the running changelog of decisions taken while executing it.
 - `pipeline/`: Python 3.12 via uv. `uv run mathlibmap fetch` downloads every registered input into
   `pipeline/cache/` (gitignored); `uv run mathlibmap report` prints headline counts. Source registry
   with licenses: `pipeline/mathlibmap/sources.py`.
-- `extractor/`: Lean 4 Lake project (Phase 1) that walks the Mathlib environment.
+- `extractor/`: Lean 4 Lake project that walks the Mathlib environment (records mode for Structures and
+  Map, deps mode for Theorems).
 - `data/curated/`: hand-maintained inputs (tours, hierarchy families, MSC overrides).
 - `docs/`: one runbook per integration.
 
@@ -130,7 +131,7 @@ this file is the running changelog of decisions taken while executing it.
 | Key | Source | License |
 |---|---|---|
 | mathnetwork_* | huggingface.co/datasets/MathNetwork/MathlibGraph (v2 CSVs; `mathlib_edges.csv` is 585 MB, fetched only with `--with-edges`) | MIT |
-| mathlib_types | huggingface.co/datasets/mathlib-initiative/mathlib-types (17 parquet parts + manifest) | Apache-2.0 |
+| mathlib_types | huggingface.co/datasets/mathlib-initiative/mathlib-types (128 parquet parts + manifest) | Apache-2.0 |
 | mathlib_100/1000/overview/undergrad | raw.githubusercontent.com/leanprover-community/mathlib4/master/docs/*.yaml | Apache-2.0 |
 | thousand_plus | github.com/1000-plus/1000-plus.github.io tarball; `_thm/*.md` front matter has `msc_classification` and `lean.identifiers` | see repo |
 | formal_conjectures | google-deepmind.github.io/formal-conjectures/data/conjectures.json (`subjects` holds AMS codes) | Apache-2.0 |

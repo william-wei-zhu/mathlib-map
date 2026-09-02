@@ -9,12 +9,19 @@ lake update            # once; clones Mathlib and its dependencies
 lake exe cache get     # downloads Mathlib's compiled oleans (several GB; fast if already cached)
 lake build
 lake exe extractor --modules Mathlib.Algebra.Group.Defs --out /tmp/small.ndjson   # seconds
-lake exe extractor --modules Mathlib --out ../pipeline/cache/extract/mathlib.ndjson  # minutes, ~8 GB RAM
+lake exe extractor --modules Mathlib --out ../pipeline/cache/extract/mathlib.ndjson  # records mode, minutes, ~8 GB RAM
+lake exe extractor --mode deps --modules Mathlib --out ../pipeline/cache/extract/deps.ndjson  # deps mode, ~80 s, ~7 GB RAM
 ```
 
-Flags: `--modules A,B` (what to import; default `Mathlib`), `--out FILE`, `--decl-prefix Mathlib`
-(only declarations from modules under this prefix get `decl` records; classes and instances are always
-emitted for the whole environment, including core and Batteries).
+Flags: `--mode records|deps` (default `records`), `--modules A,B` (what to import; default `Mathlib`),
+`--out FILE`, `--decl-prefix Mathlib` (records mode only: only declarations from modules under this prefix
+get `decl` records; classes and instances are always emitted for the whole environment, including core and
+Batteries).
+
+**Two modes.** `records` mode (below) feeds the Structures and Map views. `deps` mode feeds the Theorems
+view: one line per constant in the environment with the constant ids used in its type, its value, and the
+explicit positions of its value, plus a `.names.txt` sidecar. The deps output format and the theorem-body
+and explicitness details live in `docs/atlas.md`.
 
 **Records** (one JSON object per line, discriminated by `kind`):
 
