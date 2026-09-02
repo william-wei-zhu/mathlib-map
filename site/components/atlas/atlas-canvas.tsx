@@ -15,6 +15,7 @@ const R_MIN = 20;
 const R_SPAN = 80;
 
 export type Metric = "coverage" | "conjectures";
+export type Landmark = { name: string; citedBy: number };
 type Placed = { area: AreaSummary; x: number; y: number; r: number };
 
 function metricValue(a: AreaSummary, metric: Metric, maxConj: number): number | null {
@@ -77,12 +78,18 @@ export function AtlasCanvas({
   index,
   metric,
   focusCode,
+  landmarks = [],
+  activeNode,
   onPick,
+  onNode,
 }: {
   index: MapIndex;
   metric: Metric;
   focusCode?: string | null;
+  landmarks?: Landmark[];
+  activeNode?: string | null;
   onPick?: (code: string) => void;
+  onNode?: (name: string) => void;
 }) {
   const { resolvedTheme } = useTheme();
   const mode: "light" | "dark" = resolvedTheme === "dark" ? "dark" : "light";
@@ -193,7 +200,7 @@ export function AtlasCanvas({
             const blockH = lines.length * lineH + (showCount ? nameSize * 0.9 : 0);
             const startY = p.y - blockH / 2 + nameSize * 0.82;
             const seed = i * 1.3 + 0.4;
-            const subs = isSel ? a.subareas.filter((s) => s.declarations > 0).slice(0, 6) : [];
+            const showLandmarks = isSel && landmarks.length > 0;
             return (
               <g
                 key={a.code}
@@ -222,27 +229,47 @@ export function AtlasCanvas({
                 />
                 <path d={blobPath(p.x, p.y, p.r * 0.58, seed + 0.5)} className="fill-none" stroke={inkStroke} strokeWidth={0.8 / scale} opacity={0.1} />
 
-                {subs.map((s, si) => {
-                  const ang = -1.15 + si * (2.3 / Math.max(1, subs.length - 1));
-                  const rad = p.r + 12 / scale;
-                  const sx = p.x + Math.cos(ang) * rad;
-                  const sy = p.y + Math.sin(ang) * rad;
-                  return (
-                    <text key={s.code} x={sx} y={sy} textAnchor={Math.cos(ang) < 0 ? "end" : "start"} fontSize={9 / scale} fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
-                      {`${s.code} ${s.label}`}
+                {showLandmarks ? (
+                  <>
+                    <text x={p.x} y={p.y - p.r + 20 / scale} textAnchor="middle" fontWeight={600} fontSize={13 / scale} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                      {shortName(a)}
                     </text>
-                  );
-                })}
-
-                {lines.map((ln, li) => (
-                  <text key={li} x={p.x} y={startY + li * lineH} textAnchor="middle" fontWeight={600} fontSize={nameSize} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
-                    {ln}
-                  </text>
-                ))}
-                {showCount && (
-                  <text x={p.x} y={startY + lines.length * lineH + nameSize * 0.1} textAnchor="middle" fontSize={nameSize * 0.6} className={inkVar} style={{ fontFamily: "var(--font-mono)", opacity: 0.85 }}>
-                    {fmt(a.declarations)}
-                  </text>
+                    {landmarks.map((lm, li) => {
+                      const ang = li * 2.399963;
+                      const rad = p.r * 0.6 * Math.sqrt((li + 0.6) / landmarks.length);
+                      const nx = p.x + Math.cos(ang) * rad;
+                      const ny = p.y + Math.sin(ang) * rad + p.r * 0.06;
+                      const active = activeNode === lm.name;
+                      const rr = (active ? 8 : 5.5) / scale + Math.sqrt(lm.citedBy) / (26 * scale);
+                      const label = lm.name.split(".").pop() ?? lm.name;
+                      return (
+                        <g
+                          key={lm.name}
+                          className="cursor-pointer"
+                          onClick={(e) => { e.stopPropagation(); onNode?.(lm.name); }}
+                        >
+                          {active && <circle cx={nx} cy={ny} r={rr + 4 / scale} fill="none" stroke="var(--accent-ink)" strokeWidth={1.4 / scale} />}
+                          <circle cx={nx} cy={ny} r={rr} fill="var(--accent-ink)" stroke="var(--background)" strokeWidth={1.2 / scale} />
+                          <text x={nx} y={ny - rr - 3 / scale} textAnchor="middle" fontSize={9 / scale} fill={active ? "var(--accent-ink)" : "var(--foreground)"} style={{ fontFamily: "var(--font-mono)" }}>
+                            {label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <>
+                    {lines.map((ln, li) => (
+                      <text key={li} x={p.x} y={startY + li * lineH} textAnchor="middle" fontWeight={600} fontSize={nameSize} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                        {ln}
+                      </text>
+                    ))}
+                    {showCount && (
+                      <text x={p.x} y={startY + lines.length * lineH + nameSize * 0.1} textAnchor="middle" fontSize={nameSize * 0.6} className={inkVar} style={{ fontFamily: "var(--font-mono)", opacity: 0.85 }}>
+                        {fmt(a.declarations)}
+                      </text>
+                    )}
+                  </>
                 )}
               </g>
             );

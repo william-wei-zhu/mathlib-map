@@ -120,6 +120,15 @@ this file is the running changelog of decisions taken while executing it.
   `lib/logo-og.tsx` (constellation, one terracotta focal node); raster icon/OG routes unchanged.
   `header.tsx`/`footer.tsx`/`nav-links.tsx` pills and `frontier-map.tsx` are now unused (About/
   Privacy/Settings live in the info menu). Product name stays "Mathlib Map".
+- **2026-09-02 · Atlas redesign phase 3: Region altitude + decl fly-to.** The shell resolves the
+  map focus from the route in an effect: `/area/NN` sets `focusCode` and fetches that area's
+  landmark declarations (`map/area/NN.json` `topResults`, top 8); `/decl/NAME` fetches the node
+  shard (`atlas/nodes/...`) for its `area.code`, flies there, and marks the node active. `AtlasCanvas`
+  gained `landmarks`, `activeNode`, `onNode`; when an area is focused it hides the region name and
+  draws the landmark declarations as accent nodes (sized by citations, sized in screen units via
+  `/scale`) in a spiral inside the blob, labeled by last name segment, click routes to `/decl`. Map
+  polish: `embed.py` now adds a gravity term + isotropic fit (no stranded areas); region labels wrap
+  instead of truncating.
 
 ## Status
 

@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LogoMark } from "@/components/logo";
+import { DATA_BASE_URL } from "@/lib/site";
 import { areaHref, type MapIndex } from "@/lib/map-data";
-import { AtlasCanvas, type Metric } from "./atlas-canvas";
+import { declHref, nodeShardPath } from "@/lib/atlas-data";
+import { AtlasCanvas, type Metric, type Landmark } from "./atlas-canvas";
 import { SearchBox } from "./search-box";
 import { LayersControl } from "./layers-control";
 import { InfoMenu } from "./info-menu";
@@ -22,20 +24,69 @@ function areaCodeOf(pathname: string): string | null {
   return m ? m[1] : null;
 }
 
+function declNameOf(pathname: string): string | null {
+  const m = pathname.match(/^\/decl\/(.+)$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+async function getJson(url: string): Promise<unknown> {
+  try {
+    const r = await fetch(url);
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchLandmarks(code: string): Promise<Landmark[]> {
+  const data = (await getJson(`${DATA_BASE_URL}/map/area/${code}.json`)) as { topResults?: Landmark[] } | null;
+  return (data?.topResults ?? []).slice(0, 8);
+}
+
 export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [metric, setMetric] = useState<Metric>("coverage");
   const [open, setOpen] = useState(false);
   const [width, setWidth] = useState(DEFAULT_W);
+  const [focusCode, setFocusCode] = useState<string | null>(null);
+  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
+  const [activeNode, setActiveNode] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const isHome = pathname === "/";
-  const focusCode = areaCodeOf(pathname);
 
   // Open the sidebar for any content route; collapse on the map home.
   useEffect(() => {
     setOpen(pathname !== "/");
+  }, [pathname]);
+
+  // Resolve what the map should focus on from the route: an area shows its landmarks; a
+  // declaration flies to its area and highlights the node; anything else returns to the world.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const area = areaCodeOf(pathname);
+      const decl = declNameOf(pathname);
+      if (area) {
+        setActiveNode(null);
+        setFocusCode(area);
+        const lm = await fetchLandmarks(area);
+        if (alive) setLandmarks(lm);
+      } else if (decl) {
+        const node = (await getJson(`${DATA_BASE_URL}/${nodeShardPath(decl)}`)) as { area?: { code?: string } } | null;
+        if (!alive) return;
+        const code = node?.area?.code ?? null;
+        setActiveNode(decl);
+        setFocusCode(code);
+        setLandmarks(code ? await fetchLandmarks(code) : []);
+      } else {
+        setFocusCode(null);
+        setLandmarks([]);
+        setActiveNode(null);
+      }
+    })();
+    return () => { alive = false; };
   }, [pathname]);
 
   // Reset the panel scroll to the top when the route changes.
@@ -76,7 +127,10 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
           index={mapIndex}
           metric={metric}
           focusCode={focusCode}
+          landmarks={landmarks}
+          activeNode={activeNode}
           onPick={(code) => router.push(areaHref(code))}
+          onNode={(name) => router.push(declHref(name))}
         />
       ) : (
         <div className="absolute inset-0 grid place-items-center p-8 text-center text-muted-foreground">
