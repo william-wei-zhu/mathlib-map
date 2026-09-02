@@ -76,7 +76,7 @@ SOURCES: dict[str, Source] = {
         license="Apache-2.0",
         url=f"{HF}/mathlib-initiative/mathlib-types/resolve/main",
         kind="hf-parquet-parts",
-        files=tuple(["manifest.json"] + [f"part-{i:03d}.parquet" for i in range(17)]),
+        note="manifest.json lists the parquet parts (128 at types-v4.33.0); fetch reads it first",
     ),
     # Famous-theorem and curriculum tracking files maintained in Mathlib.
     "mathlib_100": Source("mathlib_100", "Mathlib docs/100.yaml", "Apache-2.0", f"{MATHLIB_RAW}/100.yaml", "file"),

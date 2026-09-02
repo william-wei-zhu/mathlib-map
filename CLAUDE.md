@@ -61,7 +61,7 @@ this file is the running changelog of decisions taken while executing it.
 | mathlib_100/1000/overview/undergrad | raw.githubusercontent.com/leanprover-community/mathlib4/master/docs/*.yaml | Apache-2.0 |
 | thousand_plus | github.com/1000-plus/1000-plus.github.io tarball; `_thm/*.md` front matter has `msc_classification` and `lean.identifiers` | see repo |
 | formal_conjectures | google-deepmind.github.io/formal-conjectures/data/conjectures.json (`subjects` holds AMS codes) | Apache-2.0 |
-| msc2020 | msc2020.org/MSC_2020.csv | CC BY-NC-SA |
+| msc2020 | msc2020.org/MSC_2020.csv (tab-separated, Latin-1 encoded) | CC BY-NC-SA |
 
 ## Deploy
 

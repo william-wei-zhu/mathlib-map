@@ -37,7 +37,7 @@ def report() -> dict[str, int]:
     counts["typed_constants"] = int(sum(pd.read_parquet(p, columns=["name"]).shape[0] for p in parts))
     manifest = json.loads((types_dir / "manifest.json").read_text())
     counts["mathlib_types_parts"] = len(parts)
-    print("mathlib-types manifest:", {k: manifest[k] for k in list(manifest)[:6]})
+    print("mathlib-types dataset:", manifest.get("datasetName"), "parts:", len(manifest.get("files", [])) - 1)
 
     hundred = _yaml(CACHE / "mathlib_100" / "100.yaml")
     counts["hundred_entries"] = len(hundred)
@@ -58,11 +58,13 @@ def report() -> dict[str, int]:
             with_msc += 1
     counts["thousand_plus_with_msc"] = with_msc
 
-    fc = json.loads((CACHE / "formal_conjectures" / "conjectures.json").read_text(encoding="utf-8"))
+    fc_doc = json.loads((CACHE / "formal_conjectures" / "conjectures.json").read_text(encoding="utf-8"))
+    fc = fc_doc["conjectures"] if isinstance(fc_doc, dict) else fc_doc
     counts["formal_conjectures"] = len(fc)
     counts["formal_conjectures_with_subjects"] = sum(1 for c in fc if c.get("subjects"))
 
-    msc = pd.read_csv(CACHE / "msc2020" / "MSC_2020.csv", dtype=str, header=None, on_bad_lines="skip")
+    # msc2020.org ships the CSV in Latin-1 (accented names), not UTF-8.
+    msc = pd.read_csv(CACHE / "msc2020" / "MSC_2020.csv", dtype=str, header=None, on_bad_lines="skip", encoding="latin-1")
     counts["msc2020_rows"] = len(msc)
 
     for k, v in counts.items():

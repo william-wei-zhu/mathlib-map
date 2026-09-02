@@ -36,7 +36,10 @@ def fetch_source(src: Source, *, with_edges: bool = False) -> list[Path]:
             return []
         return [_download(src.url, out_dir / Path(src.url).name)]
     if src.kind == "hf-parquet-parts":
-        return [_download(f"{src.url}/{name}", out_dir / name) for name in src.files]
+        manifest = _download(f"{src.url}/manifest.json", out_dir / "manifest.json")
+        listed = json.loads(manifest.read_text())["files"]
+        parts = [e["relativePath"] for e in listed if e["relativePath"].endswith(".parquet")]
+        return [manifest] + [_download(f"{src.url}/{name}", out_dir / name) for name in parts]
     if src.kind == "tarball":
         tar_path = _download(src.url, out_dir / "source.tar.gz")
         extracted = out_dir / "extracted"
