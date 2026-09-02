@@ -44,7 +44,17 @@ async function fetchLandmarks(code: string): Promise<Landmark[]> {
   return (data?.topResults ?? []).slice(0, 18);
 }
 
-export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; children: React.ReactNode }) {
+export type Snapshot = { mathlibTag: string; date: string; downloads: string | null };
+
+export function AtlasShell({
+  mapIndex,
+  snapshot,
+  children,
+}: {
+  mapIndex: MapIndex | null;
+  snapshot?: Snapshot;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [metric, setMetric] = useState<Metric>("coverage");
@@ -57,10 +67,15 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
   const contentRef = useRef<HTMLDivElement>(null);
 
   const isHome = pathname === "/";
+  const prevPath = useRef<string | null>(null);
 
-  // Open the sidebar for any content route; collapse on the map home.
+  // Collapse on the map home; open the panel when diving in from the map (or on first content load);
+  // otherwise preserve the user's manual collapse as they move between content routes.
   useEffect(() => {
-    setOpen(pathname !== "/");
+    const was = prevPath.current;
+    prevPath.current = pathname;
+    if (pathname === "/") { setOpen(false); return; }
+    if (was === null || was === "/") setOpen(true);
   }, [pathname]);
 
   // Resolve what the map should focus on from the route: an area shows its landmarks; a
@@ -111,6 +126,10 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
 
   const startResize = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
+    // Capture the pointer so a fast drag that leaves the window (or crosses an iframe) never strands
+    // the listeners with the handle stuck mid-drag.
+    const handle = e.currentTarget as HTMLElement;
+    try { handle.setPointerCapture(e.pointerId); } catch {}
     let latest = width;
     const onMove = (ev: PointerEvent) => {
       latest = Math.min(MAX_W, Math.max(MIN_W, ev.clientX - 12));
@@ -119,6 +138,7 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
     const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      try { handle.releasePointerCapture(e.pointerId); } catch {}
       document.body.style.userSelect = "";
       try { localStorage.setItem(STORE_KEY, String(Math.round(latest))); } catch {}
     };
@@ -129,7 +149,7 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
 
   return (
     <div
-      className="relative h-dvh w-screen overflow-hidden bg-background"
+      className="relative h-dvh w-full overflow-hidden bg-background"
       style={{ ["--sw" as string]: `${width}px` } as React.CSSProperties}
     >
       {mapIndex ? (
@@ -162,7 +182,7 @@ export function AtlasShell({ mapIndex, children }: { mapIndex: MapIndex | null; 
 
       {/* menu (top-right, both breakpoints) */}
       <div className="absolute right-3 top-3 z-40">
-        <InfoMenu />
+        <InfoMenu snapshot={snapshot} />
       </div>
 
       {/* panel: left card on desktop, bottom sheet on mobile */}

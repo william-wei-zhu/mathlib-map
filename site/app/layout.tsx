@@ -5,6 +5,7 @@ import { PostHogProvider } from "@/components/posthog-provider";
 import { AtlasShell } from "@/components/atlas/atlas-shell";
 import { fetchShard } from "@/lib/data";
 import { type MapIndex } from "@/lib/map-data";
+import { getSnapshot } from "@/lib/snapshot";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -49,7 +50,15 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const mapIndex = await fetchShard<MapIndex>("map/index.json");
+  // Never let a bucket hiccup white-screen every route: AtlasShell renders a graceful fallback when
+  // the map index is null, so we degrade instead of throwing out of the root layout.
+  let mapIndex: MapIndex | null = null;
+  try {
+    mapIndex = await fetchShard<MapIndex>("map/index.json");
+  } catch {
+    mapIndex = null;
+  }
+  const snapshot = await getSnapshot();
   return (
     <html
       lang="en"
@@ -59,7 +68,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className="bg-background text-foreground">
         <PostHogProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <AtlasShell mapIndex={mapIndex}>{children}</AtlasShell>
+            <AtlasShell mapIndex={mapIndex} snapshot={snapshot}>{children}</AtlasShell>
           </ThemeProvider>
         </PostHogProvider>
       </body>
