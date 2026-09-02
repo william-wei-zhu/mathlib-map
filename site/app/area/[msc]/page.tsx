@@ -12,7 +12,14 @@ const link = "text-accent-ink underline underline-offset-4 hover:text-foreground
 
 async function load(code: string): Promise<AreaPage | null> {
   if (!/^\d{2}$/.test(code)) return null;
-  return fetchShard<AreaPage>(`map/area/${code}.json`);
+  const raw = await fetchShard<AreaPage & { modules: number | AreaPage["files"] }>(`map/area/${code}.json`);
+  if (!raw) return null;
+  // Data written before the rename carried the file list under `modules`; the edge cache can
+  // serve that shape for a while after an upload.
+  if (Array.isArray(raw.modules)) {
+    return { ...raw, files: raw.modules, modules: raw.modules.length };
+  }
+  return { ...raw, files: raw.files ?? [] };
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {

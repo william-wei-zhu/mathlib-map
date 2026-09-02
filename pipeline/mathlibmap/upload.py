@@ -48,9 +48,10 @@ def _stage(subdir: str) -> Path:
     return dst
 
 
-def upload(subdir: str, *, max_age: int = 3600, dry_run: bool = False) -> None:
-    """Sync out/<subdir> (gzipped) to <bucket>/<subdir>. Cache for `max_age` seconds (1h default:
-    a monthly snapshot can afford stale reads, and the snapshot tag travels inside the JSON)."""
+def upload(subdir: str, *, max_age: int = 600, dry_run: bool = False) -> None:
+    """Sync out/<subdir> (gzipped) to <bucket>/<subdir>. Cache for `max_age` seconds (10 min default:
+    long enough to absorb traffic, short enough that a deploy reading a new field does not race the
+    bucket's edge cache for an hour)."""
     if shutil.which("gcloud") is None:
         raise SystemExit("gcloud CLI not found")
     stage = _stage(subdir)
