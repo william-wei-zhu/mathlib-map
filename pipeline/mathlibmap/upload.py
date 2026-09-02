@@ -32,7 +32,7 @@ def upload(subdir: str, *, max_age: int = 3600, dry_run: bool = False) -> None:
     if not src.exists():
         raise SystemExit(f"nothing to upload at {src}")
     cmd = [
-        "gcloud", "storage", "rsync", "--recursive", "--delete-unmatched-destination-objects",
+        "gcloud", "storage", "rsync", "--recursive", "--delete-unmatched-destination-objects", "--gzip-local-all",
         f"--cache-control=public, max-age={max_age}",
         "--content-type=application/json",
         str(src), f"{BUCKET}/{subdir}",

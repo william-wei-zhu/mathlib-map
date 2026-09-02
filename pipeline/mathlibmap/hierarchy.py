@@ -70,6 +70,19 @@ FAMILY_LABELS = {
     "Other": "Other",
 }
 
+# Type constructors that transport structure (a subtype, a product, the order dual) rather than
+# name a mathematical object. They satisfy hundreds of classes each, so without a demotion they
+# would crowd out ℝ, ℚ, and ℤ in every list.
+TRANSPORT_TYPES = {
+    "Subtype", "Prod", "OrderDual", "Set.Elem", "ULift", "MulOpposite", "AddOpposite", "Lex", "Shrink",
+    "WithAbs", "PUnit", "Opposite", "HasQuotient.Quotient", "Sigma", "PSigma", "Sum", "Option", "WithTop",
+    "WithBot", "WithZero", "WithOne", "Additive", "Multiplicative", "Pi", "Function", "Unit", "PLift",
+    "Quotient", "Quot", "Fin", "Finset", "Multiset", "List", "Array", "Subsemigroup", "Submonoid",
+    "Subgroup", "Subring", "Subalgebra", "Submodule", "Ideal", "Subfield", "Subsemiring", "IntermediateField",
+    "Equiv", "Trunc", "Squash", "Id", "OrderHom", "MonoidHom", "RingHom", "LinearMap", "ContinuousMap",
+    "Filter", "Set", "SetLike", "Con", "AddCon", "Toplex", "Colex", "Zero", "One",
+}
+
 # Classes that are elaboration machinery rather than mathematics; kept out of the diagram
 # but still available on their own pages.
 HIDE_PREFIXES = ("Lean.", "Std.", "Batteries.", "Aesop.", "Mathlib.Tactic", "Qq.", "ProofWidgets.")
@@ -180,7 +193,7 @@ def build(ndjson: Path, out: Path = OUT, snapshot: dict | None = None) -> dict:
             "direct": [[c, per_class[c][0]] for c in direct],
             "count": len(closure),
         })
-    types_out.sort(key=lambda t: -t["count"])
+    types_out.sort(key=lambda t: (t["id"] in TRANSPORT_TYPES, -t["count"]))
     type_rank = {t["id"]: i for i, t in enumerate(types_out)}
 
     hidden = lambda n, c: (c.get("module") or "").startswith(HIDE_PREFIXES) or n.startswith(HIDE_PREFIXES)  # noqa: E731

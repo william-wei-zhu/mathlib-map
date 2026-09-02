@@ -49,7 +49,9 @@ export class DataUnavailableError extends Error {}
 export async function fetchShard<T>(path: string, revalidate = 3600): Promise<T | null> {
   const url = `${DATA_BASE_URL}/${path}`;
   const res = await fetch(url, { next: { revalidate } });
-  if (res.status === 404) return null;
+  // The bucket is public-read, so a 403 can only mean the object does not exist
+  // (GCS answers 403 rather than 404 for missing objects when listing is not granted).
+  if (res.status === 404 || res.status === 403) return null;
   if (!res.ok) throw new DataUnavailableError(`${res.status} for ${path}`);
   return (await res.json()) as T;
 }
