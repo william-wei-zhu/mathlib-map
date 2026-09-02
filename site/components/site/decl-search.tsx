@@ -22,7 +22,7 @@ function loadShard(k: string): Promise<SearchEntry[]> {
   if (!shardCache.has(k)) {
     shardCache.set(
       k,
-      fetch(`${DATA_BASE_URL}/search/${k}.json`).then((r) => (r.ok ? (r.json() as Promise<SearchEntry[]>) : r.status === 404 ? [] : Promise.reject(new Error(String(r.status))))),
+      fetch(`${DATA_BASE_URL}/atlas/search/${k}.json`).then((r) => (r.ok ? (r.json() as Promise<SearchEntry[]>) : r.status === 404 ? [] : Promise.reject(new Error(String(r.status))))),
     );
   }
   return shardCache.get(k)!;

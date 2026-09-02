@@ -25,7 +25,7 @@ subterm is visited once, so the traversal is linear in the DAG size.
    one cycle inflates everything above it). Max 361.
 6. "Rests on N definitions": a breadth-first count of definitions reachable in the full graph, computed
    for the 3,000 most cited nodes only (a full sweep would be 300K BFS runs).
-7. Shards: `nodes/<sha1 prefix>/<percent-encoded name>.json` (statement and docstring from
+7. Shards, uploaded under the `atlas/` prefix: `nodes/<sha1 prefix>/<percent-encoded name>.json` (statement and docstring from
    mathlib-types, module, area, assumptions, deprecation, famous-list tags, citedBy, depth, axioms, up to
    200 cites and 200 cited-by each ranked by citedBy, a 30-node star), `search/<2 chars>.json` (names
    containing a component that starts with those two characters, with kind and citedBy), `rank.json`

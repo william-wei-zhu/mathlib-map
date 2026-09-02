@@ -36,10 +36,10 @@ export function declHref(name: string): string {
   return `/decl/${encodeURIComponent(name)}`;
 }
 
-/** Bucket path of a node shard: two hex chars of sha1, then the encoded name. */
+/** Bucket path of a node shard: the atlas prefix, two hex chars of sha1, then the encoded name. */
 export function nodeShardPath(name: string): string {
   const prefix = createHash("sha1").update(name).digest("hex").slice(0, 2);
-  return `nodes/${prefix}/${pyQuote(name)}.json`;
+  return `atlas/nodes/${prefix}/${pyQuote(name)}.json`;
 }
 
 export function loogleHref(query: string): string {
