@@ -8,6 +8,7 @@ import { SNAPSHOT } from "@/lib/snapshot";
 import { DocText } from "@/components/site/doc-text";
 import { DependencyStar } from "@/components/site/dependency-star";
 import { PagedList } from "@/components/site/paged-list";
+import { PathTrace } from "@/components/atlas/path-trace";
 
 type Params = { name: string };
 const link = "text-accent-ink underline underline-offset-4 hover:text-foreground";
@@ -142,6 +143,10 @@ export default async function DeclRoute({ params }: { params: Promise<Params> })
 
       <Section title="Around this declaration" intro="Dashed lines are statement dependencies; solid lines are citations in proofs.">
         <DependencyStar name={page.name} uses={page.uses} usedBy={page.usedBy} />
+      </Section>
+
+      <Section title="Trace a path" intro="How does this result rest on another one?">
+        <PathTrace from={page.name} />
       </Section>
 
       <Section title="Cites" count={fmt(page.usesCount)} intro="Mathlib declarations this one mentions in its statement or cites explicitly in its proof. Plumbing is filtered out.">
