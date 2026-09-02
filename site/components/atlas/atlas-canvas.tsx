@@ -1,23 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
 import "d3-transition";
 import { Minus, Plus, Scan } from "lucide-react";
-import { areaHref, coverage, fmt, pct, shortName, type AreaSummary, type MapIndex } from "@/lib/map-data";
-import { RAMP, fillFor, rampStep, textOn } from "@/lib/ramp";
-import { cn } from "@/lib/utils";
-import { track } from "@/lib/analytics";
+import { coverage, fmt, pct, shortName, type AreaSummary, type MapIndex } from "@/lib/map-data";
+import { fillFor, rampStep, textOn } from "@/lib/ramp";
 
 const W = 1200;
 const H = 760;
 const R_MIN = 20;
 const R_SPAN = 80;
 
-type Metric = "coverage" | "conjectures";
+export type Metric = "coverage" | "conjectures";
 type Placed = { area: AreaSummary; x: number; y: number; r: number };
 
 function metricValue(a: AreaSummary, metric: Metric, maxConj: number): number | null {
@@ -29,7 +26,6 @@ function truncate(label: string, maxChars: number): string {
   return label.length <= maxChars ? label : label.slice(0, Math.max(1, maxChars - 1)) + "…";
 }
 
-/** Organic, deterministic region outline: a wobbled circle rendered as a closed quadratic path. */
 function blobPath(cx: number, cy: number, r: number, seed: number): string {
   const pts = 11;
   const out: [number, number][] = [];
@@ -49,7 +45,6 @@ function blobPath(cx: number, cy: number, r: number, seed: number): string {
   return d + "Z";
 }
 
-/** Fallback layout when the embedding did not place areas: a size-ordered grid inside the viewBox. */
 function gridLayout(areas: AreaSummary[], maxDecl: number): Placed[] {
   const sorted = [...areas].sort((a, b) => b.declarations - a.declarations);
   const cols = Math.ceil(Math.sqrt(sorted.length));
@@ -63,11 +58,24 @@ function gridLayout(areas: AreaSummary[], maxDecl: number): Placed[] {
   }));
 }
 
-export function AtlasCanvas({ index }: { index: MapIndex }) {
+/**
+ * The World map. Controlled by the shell: `metric` shades it, `focusCode` (from the route) zooms
+ * to and highlights an area, and `onPick` fires when a region is clicked so the shell can route to
+ * that area. Wheel-zoom is disabled so the surrounding page can scroll; drag and buttons pan/zoom.
+ */
+export function AtlasCanvas({
+  index,
+  metric,
+  focusCode,
+  onPick,
+}: {
+  index: MapIndex;
+  metric: Metric;
+  focusCode?: string | null;
+  onPick?: (code: string) => void;
+}) {
   const { resolvedTheme } = useTheme();
   const mode: "light" | "dark" = resolvedTheme === "dark" ? "dark" : "light";
-  const [metric, setMetric] = useState<Metric>("coverage");
-  const [selected, setSelected] = useState<string | null>(null);
   const [hover, setHover] = useState<{ area: AreaSummary; x: number; y: number } | null>(null);
   const [scale, setScale] = useState(1);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -81,7 +89,6 @@ export function AtlasCanvas({ index }: { index: MapIndex }) {
   const placed = useMemo<Placed[]>(() => {
     const withPos = areas.filter((a) => a.pos);
     if (withPos.length < 3) return gridLayout(areas, maxDecl);
-    // Largest first so big regions paint under smaller neighbours and their labels win.
     return withPos
       .slice()
       .sort((a, b) => b.declarations - a.declarations)
@@ -101,7 +108,6 @@ export function AtlasCanvas({ index }: { index: MapIndex }) {
     const z = zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
       .translateExtent([[0, 0], [W, H]])
-      // Let the page keep its scroll: zoom by drag, pinch, and the buttons, never the wheel.
       .filter((ev) => ev.type !== "wheel" && !ev.button)
       .on("zoom", (ev) => {
         g.attr("transform", ev.transform.toString());
@@ -116,22 +122,21 @@ export function AtlasCanvas({ index }: { index: MapIndex }) {
     };
   }, []);
 
-  const zoomTo = (p: Placed) => {
+  const flyTo = useCallback((p: Placed) => {
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z) return;
     const k = Math.min(6, (Math.min(W, H) * 0.42) / p.r);
     const tx = W / 2 - k * p.x;
     const ty = H / 2 - k * p.y;
-    select(svgEl).transition().duration(500).call(z.transform, zoomIdentity.translate(tx, ty).scale(k));
-  };
-  const reset = () => {
+    select(svgEl).transition().duration(600).call(z.transform, zoomIdentity.translate(tx, ty).scale(k));
+  }, []);
+  const reset = useCallback(() => {
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z) return;
-    select(svgEl).transition().duration(350).call(z.transform, zoomIdentity);
-    setSelected(null);
-  };
+    select(svgEl).transition().duration(400).call(z.transform, zoomIdentity);
+  }, []);
   const zoomBy = (f: number) => {
     const svgEl = svgRef.current;
     const z = zoomRef.current;
@@ -139,10 +144,15 @@ export function AtlasCanvas({ index }: { index: MapIndex }) {
     select(svgEl).transition().duration(200).call(z.scaleBy, f);
   };
 
-  const selectedArea = selected ? areas.find((a) => a.code === selected) ?? null : null;
-  const chip = (active: boolean) =>
-    cn("eyebrow inline-flex h-9 items-center rounded-full border px-3.5 transition-colors", active ? "border-foreground bg-foreground text-background" : "border-border bg-card text-foreground hover:border-foreground");
-  const round = "inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground";
+  // React to the route: fly to the focused area, or reset when there is none.
+  useEffect(() => {
+    if (!focusCode) {
+      reset();
+      return;
+    }
+    const p = placed.find((x) => x.area.code === focusCode);
+    if (p) flyTo(p);
+  }, [focusCode, placed, flyTo, reset]);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-card">
@@ -163,8 +173,8 @@ export function AtlasCanvas({ index }: { index: MapIndex }) {
             const ink = textOn(step, mode);
             const inkVar = ink === "paper" ? "fill-background" : "fill-foreground";
             const inkStroke = ink === "paper" ? "var(--background)" : "var(--foreground)";
-            const isSel = selected === a.code;
-            const dim = selected !== null && !isSel;
+            const isSel = focusCode === a.code;
+            const dim = !!focusCode && !isSel;
             const nameSize = Math.max(13, p.r * 0.2);
             const seed = i * 1.3 + 0.4;
             const subs = isSel ? a.subareas.filter((s) => s.declarations > 0).slice(0, 6) : [];
@@ -175,10 +185,10 @@ export function AtlasCanvas({ index }: { index: MapIndex }) {
                 tabIndex={0}
                 aria-label={`${a.code} ${a.label}: ${fmt(a.declarations)} declarations`}
                 className="cursor-pointer outline-none"
-                style={{ opacity: dim ? 0.25 : 1, transition: "opacity .3s" }}
-                onClick={() => { setSelected(a.code); zoomTo(p); track("map_area_zoomed", { area: a.code }); }}
+                style={{ opacity: dim ? 0.28 : 1, transition: "opacity .3s" }}
+                onClick={() => onPick?.(a.code)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(a.code); zoomTo(p); }
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick?.(a.code); }
                 }}
                 onMouseMove={(e) => {
                   const r = svgRef.current?.getBoundingClientRect();
@@ -224,45 +234,13 @@ export function AtlasCanvas({ index }: { index: MapIndex }) {
         </g>
       </svg>
 
-      {/* color-by controls */}
-      <div className="pointer-events-none absolute left-4 top-4 flex flex-col gap-2">
-        <span className="eyebrow rounded-full bg-card/80 px-2 py-1 text-muted-foreground backdrop-blur">Color by</span>
-        <div className="pointer-events-auto flex gap-2">
-          <button type="button" className={chip(metric === "coverage")} onClick={() => { setMetric("coverage"); track("map_color_changed", { metric: "coverage" }); }}>Famous theorems formalized</button>
-          <button type="button" className={chip(metric === "conjectures")} onClick={() => { setMetric("conjectures"); track("map_color_changed", { metric: "conjectures" }); }}>Open conjectures stated</button>
-        </div>
-      </div>
-
-      {/* zoom controls */}
       <div className="absolute bottom-5 right-5 flex flex-col gap-2">
-        <button type="button" onClick={() => zoomBy(1.6)} aria-label="Zoom in" title="Zoom in" className={round}><Plus className="h-5 w-5" /></button>
-        <button type="button" onClick={() => zoomBy(1 / 1.6)} aria-label="Zoom out" title="Zoom out" className={round}><Minus className="h-5 w-5" /></button>
-        <button type="button" onClick={reset} aria-label="Reset view" title="Reset view" className={round}><Scan className="h-4 w-4" /></button>
+        <button type="button" onClick={() => zoomBy(1.6)} aria-label="Zoom in" title="Zoom in" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Plus className="h-5 w-5" /></button>
+        <button type="button" onClick={() => zoomBy(1 / 1.6)} aria-label="Zoom out" title="Zoom out" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Minus className="h-5 w-5" /></button>
+        <button type="button" onClick={reset} aria-label="Reset view" title="Reset view" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:border-foreground"><Scan className="h-4 w-4" /></button>
       </div>
 
-      {/* legend */}
-      <div className="absolute bottom-5 left-4 max-w-[280px] rounded-xl border border-border bg-card/95 p-3 shadow-sm backdrop-blur">
-        <span className="eyebrow text-muted-foreground">{metric === "coverage" ? "Famous theorems formalized" : "Open conjectures stated"}</span>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="eyebrow text-muted-foreground">{metric === "coverage" ? "0%" : "few"}</span>
-          <div className="flex overflow-hidden rounded-sm border border-border">
-            {RAMP[mode].map((c) => <span key={c} className="h-3 w-5" style={{ background: c }} />)}
-          </div>
-          <span className="eyebrow text-muted-foreground">{metric === "coverage" ? "100%" : "many"}</span>
-        </div>
-        <p className="mt-2 text-xs leading-snug text-muted-foreground">Regions sized by declarations; areas that share theorems sit near each other. Drag to pan, click a region to zoom.</p>
-      </div>
-
-      {/* selected-area banner */}
-      {selectedArea && (
-        <div className="absolute left-1/2 top-4 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-card px-4 py-2 text-sm shadow-sm">
-          <span className="font-medium">{selectedArea.code} · {shortName(selectedArea)}</span>
-          <Link href={areaHref(selectedArea.code)} className="text-accent-ink underline underline-offset-4 hover:text-foreground">Open area</Link>
-          <button type="button" onClick={reset} className="text-muted-foreground hover:text-foreground">Reset</button>
-        </div>
-      )}
-
-      {hover && !selectedArea && (
+      {hover && !focusCode && (
         <div
           className="pointer-events-none absolute z-20 max-w-xs rounded-md border border-border bg-popover p-3 text-sm text-foreground shadow-md"
           style={{ left: Math.min(hover.x + 14, W - 40), top: hover.y + 14 }}

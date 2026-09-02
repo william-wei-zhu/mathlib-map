@@ -103,6 +103,23 @@ this file is the running changelog of decisions taken while executing it.
   hero on `/` with the ranked table kept below as the fallback. `frontier-map.tsx` is retained until the
   SPA shell lands. `data/index.json` needs `mathlibmap upload map` (or re-run embed) before the deployed
   site shows positions; `pos` is backward-compatible and ignored by the old treemap.
+- **2026-09-02 · Atlas redesign phase 2: Google-Maps shell.** The whole site is now one persistent
+  full-screen map with a left collapsible, drag-resizable sidebar holding every route, a floating
+  top search box, a floating Layers control, and a redesigned node-constellation logo. Structure:
+  `app/layout.tsx` (now async, fetches `map/index.json`) renders `<AtlasShell mapIndex>` instead of
+  header/main/footer; `components/atlas/atlas-shell.tsx` mounts the persistent `<AtlasCanvas>` once
+  (so pan/zoom survives navigation), places logo + `search-box.tsx` top-left, renders each route's
+  `children` in the left `<Sidebar>` (collapsed on `/`, open on content routes; width remembered in
+  `localStorage["atlas.sidebarW"]`, 300-720px), and floats `layers-control.tsx` + `info-menu.tsx`
+  top-right. No parallel/intercepting routes needed: the map lives in the layout, every route (soft
+  or hard load) shows map + sidebar, deep links stay server-rendered. The map reacts to the route
+  (`/area/NN` -> fly + highlight) and region clicks `router.push` to the area. `AtlasCanvas` is now
+  controlled (`metric`, `focusCode`, `onPick`); its color/legend/banner moved to the shell.
+  `search-box.tsx` unifies areas (`map/index.json`) + structures (`hierarchy/index.json`) +
+  theorems (`atlas/search/*` prefix shards). Logo redesigned in `components/logo.tsx` +
+  `lib/logo-og.tsx` (constellation, one terracotta focal node); raster icon/OG routes unchanged.
+  `header.tsx`/`footer.tsx`/`nav-links.tsx` pills and `frontier-map.tsx` are now unused (About/
+  Privacy/Settings live in the info menu). Product name stays "Mathlib Map".
 
 ## Status
 

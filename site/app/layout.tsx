@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Fraunces, Literata, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PostHogProvider } from "@/components/posthog-provider";
-import { Header } from "@/components/site/header";
-import { Footer } from "@/components/site/footer";
+import { AtlasShell } from "@/components/atlas/atlas-shell";
+import { fetchShard } from "@/lib/data";
+import { type MapIndex } from "@/lib/map-data";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -47,19 +48,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const mapIndex = await fetchShard<MapIndex>("map/index.json");
   return (
     <html
       lang="en"
       suppressHydrationWarning
       className={`${fraunces.variable} ${literata.variable} ${jetbrains.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-background text-foreground">
+      <body className="bg-background text-foreground">
         <PostHogProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
+            <AtlasShell mapIndex={mapIndex}>{children}</AtlasShell>
           </ThemeProvider>
         </PostHogProvider>
       </body>
