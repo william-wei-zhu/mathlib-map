@@ -21,10 +21,11 @@ export function DeclSearch() {
   // Fetch matches from the server (it filters the multi-MB shard; the client never downloads it).
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) { setResults([]); setStatus(q.length ? "short" : "idle"); return; }
     const id = ++reqId.current;
-    setStatus("loading");
     const t = setTimeout(async () => {
+      if (id !== reqId.current) return;
+      if (q.length < 2) { setResults([]); setStatus(q.length ? "short" : "idle"); return; }
+      setStatus("loading");
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=60`);
         if (!res.ok) throw new Error(String(res.status));

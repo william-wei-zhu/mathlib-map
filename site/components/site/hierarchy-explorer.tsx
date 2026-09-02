@@ -36,6 +36,9 @@ export function HierarchyExplorer() {
   // The diagram renders into a full-canvas overlay (provided by AtlasShell on /hierarchy) so the
   // 80-node layout is legible, while these controls stay in the panel. Falls back to inline.
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  // The overlay slot is rendered by AtlasShell (a different component), so it must be looked up from
+  // the DOM after mount rather than via a ref.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setSlot(document.getElementById("atlas-hierarchy-slot")); }, [state.status]);
 
   useEffect(() => {

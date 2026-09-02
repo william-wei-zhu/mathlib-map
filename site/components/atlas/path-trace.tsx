@@ -33,9 +33,9 @@ export function PathTrace({ from }: { from: string }) {
   // Autocomplete the target from the theorem search index.
   useEffect(() => {
     const query = q.trim();
-    if (query.length < 2 || query === target) { setSuggests([]); return; }
     let alive = true;
     const t = setTimeout(async () => {
+      if (query.length < 2 || query === target) { if (alive) setSuggests([]); return; }
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=6`);
         if (!res.ok) return;

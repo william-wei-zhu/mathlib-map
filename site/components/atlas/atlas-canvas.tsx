@@ -103,6 +103,9 @@ export function AtlasCanvas({
   const maxConj = useMemo(() => Math.max(0, ...areas.map((a) => a.conjectures_open)), [areas]);
   const maxDecl = useMemo(() => Math.max(1, ...areas.map((a) => a.declarations)), [areas]);
 
+  // Load-bearing memo: recomputed every render would re-place all regions on each zoom frame
+  // (setScale fires per frame). React Compiler is not enabled, so this manual memo must stay.
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const placed = useMemo<Placed[]>(() => {
     const withPos = areas.filter((a) => a.pos);
     if (withPos.length < 3) return gridLayout(areas, maxDecl);

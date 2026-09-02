@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { areaHref, shortName, type AreaSummary } from "@/lib/map-data";
@@ -46,8 +46,7 @@ export function SearchBox({ areas }: { areas: AreaSummary[] }) {
   const [active, setActive] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const close = useCallback(() => setOpen(false), []);
-  useDismiss(boxRef, open, close);
+  useDismiss(boxRef, open, () => setOpen(false));
 
   const areaResults = useMemo<Result[]>(() => {
     const l = q.trim().toLowerCase();
@@ -61,9 +60,9 @@ export function SearchBox({ areas }: { areas: AreaSummary[] }) {
 
   useEffect(() => {
     const query = q.trim();
-    if (query.length < 2) { setResults([]); setActive(-1); return; }
     let alive = true;
     const t = setTimeout(async () => {
+      if (query.length < 2) { if (alive) { setResults([]); setActive(-1); } return; }
       const rest = await apiResults(query);
       if (alive) { setResults([...areaResults, ...rest]); setActive(-1); }
     }, 180);

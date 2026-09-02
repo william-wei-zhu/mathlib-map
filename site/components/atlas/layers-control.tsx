@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -19,8 +19,7 @@ export function LayersControl({ metric, onMetric }: { metric: Metric; onMetric: 
   const structures = pathname.startsWith("/hierarchy") || pathname.startsWith("/class");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
-  useDismiss(ref, open, close);
+  useDismiss(ref, open, () => setOpen(false));
 
   const tab = (active: boolean) =>
     cn("eyebrow flex-1 rounded-full px-3 py-1.5 text-center transition-colors", active ? "bg-foreground text-background" : "text-foreground hover:bg-muted");

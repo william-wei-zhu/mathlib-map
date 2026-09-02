@@ -85,8 +85,10 @@ export function AtlasShell({
   useEffect(() => {
     const was = prevPath.current;
     prevPath.current = pathname;
-    if (pathname === "/") { setOpen(false); return; }
-    if (was === null || was === "/") setOpen(true);
+    const next = pathname === "/" ? false : was === null || was === "/" ? true : null;
+    // Syncing panel state to route changes is exactly what this effect is for.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (next !== null) setOpen(next);
   }, [pathname]);
 
   // Resolve what the map should focus on from the route: an area shows its landmarks; a
@@ -127,10 +129,12 @@ export function AtlasShell({
     contentRef.current?.scrollTo(0, 0);
   }, [pathname]);
 
-  // Restore a remembered sidebar width.
+  // Restore a remembered sidebar width from localStorage on mount (guarded to avoid a hydration
+  // mismatch: the server and first client render both use DEFAULT_W, then this reconciles).
   useEffect(() => {
     try {
       const v = Number(localStorage.getItem(STORE_KEY));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (v >= MIN_W && v <= MAX_W) setWidth(v);
     } catch {}
   }, []);

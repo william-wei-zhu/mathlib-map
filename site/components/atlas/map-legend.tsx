@@ -13,7 +13,9 @@ const KEY = "atlas.legendDismissed";
 export function MapLegend() {
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid a flash before we read storage
 
+  // Read the per-browser dismissal on mount (starts hidden to avoid an SSR/hydration flash).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     try { setDismissed(localStorage.getItem(KEY) === "1"); } catch { setDismissed(false); }
   }, []);
 

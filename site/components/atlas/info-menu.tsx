@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { useDismiss } from "@/lib/use-dismiss";
@@ -15,7 +15,7 @@ const LINKS = [
 export function InfoMenu({ snapshot }: { snapshot?: Snapshot }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
+  const close = () => setOpen(false);
   useDismiss(ref, open, close);
   return (
     <div ref={ref} className="relative">
