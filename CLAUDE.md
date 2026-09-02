@@ -64,6 +64,12 @@ this file is the running changelog of decisions taken while executing it.
 - **2026-09-02 · Uploads are gzipped at rest.** `mathlibmap upload` stages gzipped copies and syncs them
   with `Content-Encoding: gzip` (`--gzip-in-flight-all` only compresses transport; `--gzip-local-all` is a
   `cp` flag that `rsync` rejects). The 1.5 MB index travels as 215 KB.
+- **2026-09-02 · Map ramp and sizing.** Tiles are sized by declarations (theorems + definitions from the
+  extractor, so the number matches the Structures view) and colored by famous-theorem coverage from the
+  1000+ list (numerator and denominator both shown everywhere), one terracotta ramp per theme in
+  `site/lib/ramp.ts`, neutral for areas with no listed theorems. Areas with zero declarations are not drawn.
+  On phones the treemap is hidden and the ranked table is the map. Category theory being the largest area
+  is real (1,575 files), not a classification artifact.
 - **2026-09-02 · gcloud needs Python 3.12.** The system gcloud fails on Python 3.9; every gcloud call sets
   `CLOUDSDK_PYTHON=$(uv python find 3.12)`.
 
@@ -79,6 +85,14 @@ this file is the running changelog of decisions taken while executing it.
   Routes: `/hierarchy` (family tabs, focus, type highlight, elkjs layered layout in `hierarchy-diagram.tsx`)
   and `/class/[name]` (server-rendered from `hierarchy/classes/<name>.json`, path finder client-side from
   the index). Data contract lives in `site/lib/data.ts` and `site/lib/hierarchy-client.ts`.
+
+- **2026-09-02 · Phase 2 (Map) first cut live.** `uv run mathlibmap classify` (Gemini 3.1 Flash Lite via
+  Vertex AI, cached, ~12 min for 7,751 modules) then `uv run mathlibmap map` builds `map/index.json`
+  (36 KB) and `map/area/<code>.json` (44 covered areas of 63). Totals: 322,887 declarations in 7,593
+  classified modules; 199 of 1,200 famous theorems (1000+ list) in Mathlib; 1,437 open conjectures stated in
+  Lean. Deepest: 18 category theory, 06 order, 20 groups. Widest gap: 37 dynamical systems (0 of 24).
+  Classification agreement with the 1000+ list at the 2-digit level: 139/190 (73%), see
+  `docs/msc-classification.md`. Routes: `/` (treemap, ranked table, headline) and `/area/[msc]`.
 
 ## Data sources (verified 2026-09-02)
 

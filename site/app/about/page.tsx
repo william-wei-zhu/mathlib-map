@@ -77,6 +77,13 @@ export default function AboutPage() {
           </table>
         </div>
         <p>
+          Each Mathlib file is assigned a subject area by a language model reading the file&apos;s own
+          documentation, with hand overrides. Checked against the 1000+ theorems list, the model&apos;s area
+          for a theorem&apos;s file agrees with the list&apos;s area 73% of the time; most disagreements are
+          boundary cases such as a real-analysis theorem proved in a general-topology file. Every area
+          page lists its files and their codes so you can report one that is misplaced.
+        </p>
+        <p>
           Derived datasets (the filtered dependency graph, citation counts, the module to subject
           mapping, and the hierarchy graph) will be published for download here once the first
           full pipeline run completes.

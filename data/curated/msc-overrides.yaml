@@ -2,3 +2,10 @@
 # Keys are Mathlib module names; values are 3-character MSC codes (e.g. 11A) or NONE (not mathematics).
 # Add an entry when an area page shows a misclassified file (the page has a report link).
 Mathlib.Deprecated.Aliases: NONE
+# The model returned codes outside MSC2020 for these; assigned by hand from the file contents.
+Mathlib.CategoryTheory.SmallObject.WellOrderInductionData: 18A
+Mathlib.Data.Set.Operations: 03E
+Mathlib.Data.Set.Opposite: 03E
+Mathlib.Data.Set.Pairwise.Basic: 03E
+Mathlib.Data.Set.Piecewise: 03E
+Mathlib.MeasureTheory.Measure.Lebesgue.VolumeOfBalls: 28A
