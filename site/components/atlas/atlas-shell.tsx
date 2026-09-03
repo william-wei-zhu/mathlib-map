@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LogoMark } from "@/components/logo";
 import { DATA_BASE_URL } from "@/lib/site";
 import { areaHref, type MapIndex } from "@/lib/map-data";
@@ -162,6 +162,25 @@ export function AtlasShell({
     window.addEventListener("pointerup", onUp);
   }, [width]);
 
+  const collapsePanel = useCallback(() => { setOpen(false); track("sidebar_toggled", { open: false }); }, []);
+
+  // Swipe the mobile bottom sheet down to dismiss it (a tap on the handle also collapses via onClick).
+  const startSheetSwipe = useCallback((e: React.PointerEvent) => {
+    const el = e.currentTarget as HTMLElement;
+    const startY = e.clientY;
+    try { el.setPointerCapture(e.pointerId); } catch {}
+    let done = false;
+    const onMove = (ev: PointerEvent) => {
+      if (!done && ev.clientY - startY > 32) { done = true; collapsePanel(); }
+    };
+    const onUp = () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+  }, [collapsePanel]);
+
   return (
     <div
       className="relative h-dvh w-full overflow-hidden bg-background"
@@ -216,12 +235,23 @@ export function AtlasShell({
             max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:rounded-t-2xl ${usesOverlay ? "max-sm:h-[47vh]" : "max-sm:h-[68vh]"}
             sm:left-3 sm:right-auto sm:top-[4.5rem] sm:bottom-3 sm:w-[var(--sw)] sm:rounded-2xl`}
         >
-          <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden="true" />
+          {/* mobile: a generous tap-or-swipe-down target to collapse the sheet */}
           <button
             type="button"
-            onClick={() => { setOpen(false); track("sidebar_toggled", { open: false }); }}
+            onClick={collapsePanel}
+            onPointerDown={startSheetSwipe}
             aria-label="Collapse panel"
-            className="absolute right-2.5 top-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-card/70 text-muted-foreground backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
+            className="group flex w-full shrink-0 touch-none items-center justify-center gap-1.5 py-3 sm:hidden"
+          >
+            <span className="h-1.5 w-12 rounded-full bg-border transition-colors group-active:bg-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </button>
+          {/* desktop: collapse button at the card's top-right */}
+          <button
+            type="button"
+            onClick={collapsePanel}
+            aria-label="Collapse panel"
+            className="absolute right-2.5 top-2.5 z-10 hidden h-8 w-8 items-center justify-center rounded-full bg-card/70 text-muted-foreground backdrop-blur transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
           >
             <PanelLeftClose className="h-4 w-4" />
           </button>
