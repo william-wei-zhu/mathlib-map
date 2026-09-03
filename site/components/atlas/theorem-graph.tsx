@@ -61,10 +61,9 @@ export function TheoremGraph({
     const start = cx - ((n - 1) / 2) * spread;
     return list.map((d, i) => ({ d, x: start + i * spread, y }));
   };
-  const up = place(usedBy, cy - 210);
-  const down = place(uses, cy + 210);
-  // Last dotted segment, truncated so the larger labels do not collide.
-  const short = (s: string) => { const last = s.split(".").pop() ?? s; return last.length > 13 ? last.slice(0, 12) + "…" : last; };
+  const up = place(usedBy, cy - 210).map((o, i) => ({ ...o, i, up: true }));
+  const down = place(uses, cy + 210).map((o, i) => ({ ...o, i, up: false }));
+  const short = (s: string) => s.split(".").pop() ?? s; // last dotted segment, never truncated
 
   const edge = (x: number, y: number, via: string, key: string) => (
     <path
@@ -95,18 +94,23 @@ export function TheoremGraph({
             scroll out or click away to leave
           </text>
         )}
-        <text x={cx} y={cy - 250} textAnchor="middle" fontSize={17} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+        <text x={cx} y={cy - 288} textAnchor="middle" fontSize={17} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
           {usedBy.length > 0 ? "CITED BY" : "CITED BY NOTHING YET"}
         </text>
-        <text x={cx} y={cy + 270} textAnchor="middle" fontSize={17} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+        <text x={cx} y={cy + 322} textAnchor="middle" fontSize={17} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
           {uses.length > 0 ? "CITES" : "RESTS ON AXIOMS"}
         </text>
 
         {up.map(({ d, x, y }) => edge(x, y, d.via, "eu" + d.name))}
         {down.map(({ d, x, y }) => edge(x, y, d.via, "ed" + d.name))}
 
-        {[...up, ...down].map(({ d, x, y }) => {
+        {[...up, ...down].map(({ d, x, y, i, up: isUp }) => {
           const r = 10 + Math.sqrt(d.citedBy) / 14;
+          // Full names are shown untruncated, so the label sits on the outer side of the node and
+          // every other one is pushed further out, so neighbours never collide horizontally.
+          const stagger = (i % 2) * 26;
+          const labelY = isUp ? y - r - 12 - stagger : y + r + 26 + stagger;
+          const countY = isUp ? y + r + 24 : y - r - 12;
           return (
             <g
               key={d.name}
@@ -118,10 +122,10 @@ export function TheoremGraph({
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(d.name); } }}
             >
               <circle cx={x} cy={y} r={r} fill={isDef(d.kind) ? "var(--card)" : "var(--accent-ink)"} stroke="var(--accent-ink)" strokeWidth={1.8} />
-              <text x={x} y={y - r - 8} textAnchor="middle" fontSize={18} fill="var(--foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+              <text x={x} y={labelY} textAnchor="middle" fontSize={18} fill="var(--foreground)" style={{ fontFamily: "var(--font-mono)" }}>
                 {short(d.name)}
               </text>
-              <text x={x} y={y + r + 22} textAnchor="middle" fontSize={13} fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+              <text x={x} y={countY} textAnchor="middle" fontSize={13} fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
                 {d.citedBy.toLocaleString()}
               </text>
             </g>
