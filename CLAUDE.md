@@ -191,6 +191,16 @@ this file is the running changelog of decisions taken while executing it.
   New API routes: `app/api/search`, `app/api/path`. New components: `components/atlas/{map-legend,
   path-trace}.tsx`, `lib/use-dismiss.ts`.
 
+- **2026-09-02 · Map zoom fixes (follow-up to the review pass).** Two bugs found by driving the
+  production build in a real browser: (1) clicking an area (or hard-loading `/area/NN`) never zoomed
+  the map in, because the focus effect re-fires in a burst on the route change and each `flyTo`
+  started a d3 transition that interrupted the previous one before it painted; fix: fly once per
+  focus (`flownRef`) and apply the focus/reset transform instantly (`z.transform` with no transition,
+  which the re-render churn cannot interrupt). (2) The zoom-out-to-exit gesture ejected the user to
+  `/` on *any* low-zoom gesture (including zoom-in) while the map was stuck at scale 1; fix: exit
+  only on an actual zoom-OUT (scale decreasing) past the world threshold. `atlas-canvas.tsx`. The fly
+  animation is traded for a reliable instant snap into the region.
+
 ## Status
 
 - **2026-09-02 · Mobile-friendly + collapsible Layers.** The Layers control is now a small
