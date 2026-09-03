@@ -98,6 +98,10 @@ export function AtlasCanvas({
   const mode: "light" | "dark" = resolvedTheme === "dark" ? "dark" : "light";
   const [hover, setHover] = useState<{ area: AreaSummary; x: number; y: number; w: number; h: number } | null>(null);
   const [scale, setScale] = useState(1);
+  // Screen pixels per viewBox unit (from the rendered SVG). Lets landmark nodes/labels be sized in
+  // real screen pixels instead of viewBox units, which otherwise render tiny on a narrow phone where
+  // the 1200-wide viewBox is squeezed into ~390px.
+  const [pxPerUnit, setPxPerUnit] = useState(0.8);
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -109,6 +113,16 @@ export function AtlasCanvas({
   const flownRef = useRef<string | null>(null); // the area we last flew to (guards against re-fly loops)
   const prevKRef = useRef(1); // last zoom scale, to tell a zoom-out gesture from a zoom-in
   useEffect(() => { focusRef.current = focusCode; exitRef.current = onExitFocus; });
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (box?.width && box?.height) setPxPerUnit(Math.min(box.width / W, box.height / H));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const areas = useMemo(() => index.areas.filter((a) => a.declarations > 0), [index]);
   const maxConj = useMemo(() => Math.max(0, ...areas.map((a) => a.conjectures_open)), [areas]);
@@ -210,6 +224,12 @@ export function AtlasCanvas({
     }
   }, [focusCode, placed, flyTo, reset]);
 
+  // Viewbox units that render to `px` on-screen pixels (compensating for both the map zoom and the
+  // rendered SVG scale), so landmark nodes and labels are a readable size on every device.
+  const su = (px: number) => px / (scale * pxPerUnit);
+  // Fewer landmarks on a small screen so the larger labels have room and do not overlap.
+  const maxLandmarks = pxPerUnit < 0.5 ? 8 : 16;
+
   return (
     <div className="relative h-full w-full overflow-hidden bg-card">
       <svg
@@ -270,17 +290,17 @@ export function AtlasCanvas({
                 {isSel ? (
                   <>
                     {!activeNode && (
-                      <text x={p.x} y={p.y - p.r + 34 / scale} textAnchor="middle" fontWeight={600} fontSize={24 / scale} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                      <text x={p.x} y={p.y - p.r + su(26)} textAnchor="middle" fontWeight={600} fontSize={su(22)} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
                         {shortName(a)}
                       </text>
                     )}
-                    {landmarks.map((lm, li) => {
+                    {landmarks.slice(0, maxLandmarks).map((lm, li, arr) => {
                       const ang = li * 2.399963;
-                      const rad = p.r * 0.72 * Math.sqrt((li + 0.7) / landmarks.length);
+                      const rad = p.r * 0.72 * Math.sqrt((li + 0.7) / arr.length);
                       const nx = p.x + Math.cos(ang) * rad;
                       const ny = p.y + Math.sin(ang) * rad + p.r * 0.14;
                       const active = activeNode === lm.name;
-                      const rr = (active ? 10 : 7) / scale + Math.sqrt(lm.citedBy) / (18 * scale);
+                      const rr = su(active ? 12 : 8.5) + su(Math.sqrt(lm.citedBy) / 7);
                       const label = lm.name.split(".").pop() ?? lm.name;
                       return (
                         <g
@@ -294,9 +314,9 @@ export function AtlasCanvas({
                             if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onNode?.(lm.name); }
                           }}
                         >
-                          {active && <circle cx={nx} cy={ny} r={rr + 5 / scale} fill="none" stroke={inkStroke} strokeWidth={1.8 / scale} />}
-                          <circle cx={nx} cy={ny} r={rr} fill={active ? "var(--accent-ink)" : "var(--background)"} stroke="var(--accent-ink)" strokeWidth={1.6 / scale} />
-                          <text x={nx} y={ny - rr - 4 / scale} textAnchor="middle" fontSize={12.5 / scale} fontWeight={active ? 600 : 400} fill={inkStroke} style={{ fontFamily: "var(--font-mono)" }}>
+                          {active && <circle cx={nx} cy={ny} r={rr + su(5)} fill="none" stroke={inkStroke} strokeWidth={su(1.8)} />}
+                          <circle cx={nx} cy={ny} r={rr} fill={active ? "var(--accent-ink)" : "var(--background)"} stroke="var(--accent-ink)" strokeWidth={su(1.6)} />
+                          <text x={nx} y={ny - rr - su(6)} textAnchor="middle" fontSize={su(15)} fontWeight={active ? 600 : 400} fill={inkStroke} style={{ fontFamily: "var(--font-mono)" }}>
                             {label}
                           </text>
                         </g>
