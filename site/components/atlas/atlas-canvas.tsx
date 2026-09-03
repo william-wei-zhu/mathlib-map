@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTheme } from "next-themes";
+import { useThemeMode } from "@/lib/use-theme-mode";
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
 import "d3-transition";
@@ -94,8 +94,7 @@ export function AtlasCanvas({
   /** Return to the world view (up one altitude) when the user zooms out of a focused region. */
   onExitFocus?: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const mode: "light" | "dark" = resolvedTheme === "dark" ? "dark" : "light";
+  const mode = useThemeMode();
   const [hover, setHover] = useState<{ area: AreaSummary; x: number; y: number; w: number; h: number } | null>(null);
   const [scale, setScale] = useState(1);
   // Screen pixels per viewBox unit (from the rendered SVG). Lets landmark nodes/labels be sized in

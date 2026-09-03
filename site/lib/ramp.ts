@@ -22,9 +22,11 @@ export function fillFor(step: number | null, mode: "light" | "dark"): string {
   return step === null ? RAMP.neutral[mode] : RAMP[mode][step];
 }
 
-/** Which text token to draw on a tile: "ink" (foreground) or "paper" (background). */
+/** Which text token to draw on a tile: "ink" (foreground) or "paper" (background). A bright fill
+ *  needs the paper token, a dark fill needs the ink token. In light mode the ramp darkens as the
+ *  step rises; in dark mode it brightens, so the two thresholds point opposite ways. */
 export function textOn(step: number | null, mode: "light" | "dark"): "ink" | "paper" {
   if (step === null) return "ink";
   if (mode === "light") return step >= FLIP_FROM.light ? "paper" : "ink";
-  return step >= FLIP_FROM.dark ? "ink" : "paper";
+  return step >= FLIP_FROM.dark ? "paper" : "ink";
 }

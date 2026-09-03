@@ -3,18 +3,17 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { Layers } from "lucide-react";
 import { RAMP } from "@/lib/ramp";
 import { cn } from "@/lib/utils";
 import { useDismiss } from "@/lib/use-dismiss";
+import { useThemeMode } from "@/lib/use-theme-mode";
 import { track } from "@/lib/analytics";
 import type { Metric } from "./atlas-canvas";
 
 /** A small collapsible layers control, like Google Maps: an icon button that opens a popover. */
 export function LayersControl({ metric, onMetric }: { metric: Metric; onMetric: (m: Metric) => void }) {
-  const { resolvedTheme } = useTheme();
-  const mode: "light" | "dark" = resolvedTheme === "dark" ? "dark" : "light";
+  const mode = useThemeMode();
   const pathname = usePathname();
   const structures = pathname.startsWith("/hierarchy") || pathname.startsWith("/class");
   const [open, setOpen] = useState(false);
