@@ -94,7 +94,8 @@ this file is the running changelog of decisions taken while executing it.
   Theorem layer will be a WebGL galaxy backdrop with an SVG focus+context working mode (a sanctioned
   new exception to "SVG only"; still 2D). First slice done: the World map.
   `pipeline/mathlibmap/embed.py` computes a 2D spatial embedding of the MSC areas from cross-area
-  citation counts (spectral seed + weighted Fruchterman-Reingold + per-axis fill-stretch + collision),
+  citation counts (spectral seed + weighted Fruchterman-Reingold + per-axis fill-stretch + collision;
+  **superseded by Rec 5 below, which makes the vertical axis foundational depth**),
   writing `area["pos"]=[x,y]` into `map/index.json` (viewBox 1200x760; radius
   `sqrt(size/maxsize)*80+20`, matched in the site). Called from `mapview.build` (optional; falls back
   if the extractor cache is absent). The World map is `site/components/atlas/atlas-canvas.tsx` (organic
@@ -200,6 +201,34 @@ this file is the running changelog of decisions taken while executing it.
   `/` on *any* low-zoom gesture (including zoom-in) while the map was stuck at scale 1; fix: exit
   only on an actual zoom-OUT (scale decreasing) past the world threshold. `atlas-canvas.tsx`. The fly
   animation is traded for a reliable instant snap into the region.
+
+- **2026-09-02 · Altitude navigation by zoom + theme + font/readability polish.** Round of follow-up
+  fixes making the three altitudes (World / Region / Theorem) fully navigable by zoom, and fixing
+  dark mode. All in `site/`.
+  - **Zoom is the altitude control, both ways.** World -> Region: zooming in (wheel/pinch or the +
+    button) past ~3.2x enters the region nearest the centre of the view (`nearestRegion`); Region ->
+    Theorem: zooming further, past ~2.1x the flown-in scale, enters the landmark theorem nearest the
+    centre (`landmarkPositions`, matched to the drawn spiral). Zooming out reverses it: Region ->
+    World past the world scale, and the minus button steps up too (it is a programmatic transition
+    with no `sourceEvent`, so it is handled explicitly). Thresholds are deliberately high so a light
+    scroll magnifies the current level first; `scaleExtent` is `[1, 18]` for headroom. Guards
+    (`enteringRef`/`exitingRef`) re-arm on focus/activeNode change so each jump fires once.
+  - **Theorem graph is dismissable.** On `/decl` the SVG dependency graph covers the map and eats the
+    scroll, so it handles its own gesture: scroll/pinch out or click the empty backdrop dismisses it
+    and steps up to the declaration's area (`theorem-graph.tsx`, `onDismiss`).
+  - **Readable text on every device.** Region landmark nodes/labels and the region name are sized in
+    real screen pixels via a `pxPerUnit` measurement (ResizeObserver) so they do not render ~4px when
+    the 1200-wide viewBox is squeezed onto a phone; landmark count is capped (8 mobile / 12 desktop).
+    The theorem graph shows **full, untruncated** declaration names, staggered (alternating outward
+    offsets) so long names never collide; fewer neighbours (6 cites / 5 cited-by) with wider spread.
+  - **Dark mode fixed + theme toggle.** The map read the colour mode from next-themes `resolvedTheme`,
+    which lagged during hydration, so it drew the *light* ramp on the black background (white labels on
+    light blobs). `lib/use-theme-mode.ts` reads the actual `.dark` class (MutationObserver) instead;
+    used by `AtlasCanvas` and `LayersControl`. `ramp.ts` `textOn` had its dark branch inverted (fixed
+    so bright fills get the paper token). A Light/Dark/System segmented control was added to the info
+    menu (`info-menu.tsx`).
+  - **Mobile bottom sheet collapse.** The sheet's grab handle is now a full-width tap/swipe-down target
+    that collapses it (was a tiny top-right icon; the handle was decorative) (`atlas-shell.tsx`).
 
 ## Status
 

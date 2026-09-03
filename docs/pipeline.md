@@ -28,11 +28,14 @@ one side is dropped, never guessed.
 - `hierarchy` builds the Structures view (classes, instances, families) from the records-mode extractor.
 - `classify` assigns each module an MSC area with a cache keyed on (module, docstring, namespaces, model);
   see `docs/msc-classification.md`.
-- `map` builds the Map view (areas, coverage, overlays) from the classification and the extractor counts.
-- `atlas` builds the Theorems view (spine filter, rank, foundations, node and search shards, `rank.json`)
-  from the deps-mode extractor; see `docs/atlas.md`.
-- `search` and `downloads` rebuild the name-search shards and the downloadable datasets without a full
-  atlas run.
+- `map` builds the Map view (areas, coverage, overlays) from the classification and the extractor counts,
+  and calls `embed.py` to place areas on the World map: horizontal = citation-relatedness (spectral),
+  vertical = foundational depth (from `atlas/area-depth.json`), writing `area["pos"]` into `map/index.json`.
+- `atlas` builds the Theorems view (spine filter, rank, foundations, node and search shards, `rank.json`,
+  `area-depth.json`) from the deps-mode extractor; see `docs/atlas.md`.
+- `search` rebuilds the name-search shards; `downloads` re-runs the atlas build with `write_pages=False`
+  to refresh `rank.json`/`area-depth.json`/search shards/`meta.json` and the downloadable datasets
+  without rewriting the 300K node pages.
 - `upload` gzips an `out/` subdirectory and syncs it to the bucket; see `docs/gcs.md`.
 
 The monthly job runs these in order (`hierarchy` and `map` twice, so they pick up the citation ranks);

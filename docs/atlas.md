@@ -15,8 +15,10 @@ subterm is visited once, so the traversal is linear in the DAG size.
    modules, instances, and `inst*`-named declarations. 300,710 at v4.33.0.
 2. Spine edges: target appears in the statement (`t`) or in an explicit proof position (`e`), both ends in
    the spine. 3,175,709 edges (2,123,889 statement, 2,497,457 proof; edges can be both).
-3. `citedBy` = number of spine *theorems* whose statement or proof uses the node. PageRank is computed
-   too but only used for ordering.
+3. `citedBy` = number of spine *theorems* whose statement or proof uses the node. `provenCitedBy` =
+   the same but counting only explicit *proof-position* citations (edge `e`), a "most relied on in
+   proofs" signal that is not dominated by definitions that merely appear in statements. PageRank is
+   computed too but only used for ordering.
 4. Axioms: a bitmask (`propext`, `Classical.choice`, `Quot.sound`, `sorryAx`, other) OR-propagated over
    the full graph (type and value edges of every constant) to a fixpoint. 210,532 spine nodes use all
    three standard axioms; 38,596 use none.
@@ -26,10 +28,17 @@ subterm is visited once, so the traversal is linear in the DAG size.
 6. "Rests on N definitions": a breadth-first count of definitions reachable in the full graph, computed
    for the 3,000 most cited nodes only (a full sweep would be 300K BFS runs).
 7. Shards, uploaded under the `atlas/` prefix: `nodes/<sha1 prefix>/<percent-encoded name>.json` (statement and docstring from
-   mathlib-types, module, area, assumptions, deprecation, famous-list tags, citedBy, depth, axioms, up to
+   mathlib-types, module, area, assumptions, deprecation, famous-list tags, citedBy, provenCitedBy, depth, axioms, up to
    200 cites and 200 cited-by each ranked by citedBy, a 30-node star), `search/<2 chars>.json` (names
    containing a component that starts with those two characters, with kind and citedBy), `rank.json`
-   (name -> [citedBy, kind], read by the map and hierarchy builders), `meta.json`.
+   (name -> [citedBy, kind, provenCitedBy], read by the map and hierarchy builders), `area-depth.json`
+   (2-digit MSC area -> median spine depth, read by `embed.py` for the World map's vertical axis),
+   `meta.json` (adds `topProven`, the 25 most proof-cited results).
+
+`uv run mathlibmap downloads` re-runs this build with `write_pages=False`: it regenerates `rank.json`,
+`area-depth.json`, the search shards, `meta.json`, and the downloadable TSVs without rewriting the 300K
+node pages (used to refresh rankings/positions cheaply when only derived data, not per-node content,
+changed).
 
 **Name encoding.** Python's `quote(name, safe="")` on the pipeline side and `pyQuote()` in
 `site/lib/atlas-data.ts` on the site side; they agree on `'`, `(`, `)`, `!`, `*`, which
@@ -39,7 +48,10 @@ subterm is visited once, so the traversal is linear in the DAG size.
 at ~270 objects per second). Upload the data before pushing site code that depends on a new field.
 
 **Known limits.** Citation counts follow the paper's finding that definitions used in statements dominate
-(`DFunLike.coe`, `Set`, `Real` top the list); the area pages therefore rank *theorems* only. Explicitness
-is an approximation of "would appear pretty-printed"; instance arguments and implicit type arguments are
-excluded, which is the point. The `/api/graph` closure and path endpoints from the plan are not built yet;
-pages show precomputed depth, axioms, direct cites, and (for the top 3,000) transitive definition counts.
+(`DFunLike.coe`, `Set`, `Real` top the total-`citedBy` list); the area pages rank *theorems* only, and
+by `provenCitedBy` ("most relied on in proofs"). Explicitness is an approximation of "would appear
+pretty-printed"; instance arguments and implicit type arguments are excluded, which is the point. A
+bounded proof-path search runs client-side via the `app/api/path` route (bidirectional BFS over node
+shards, capped at 300 fetches / depth 14); full precomputed `/api/graph` closure endpoints are still not
+built. Pages show precomputed depth, axioms, direct cites, and (for the top 3,000) transitive definition
+counts.
