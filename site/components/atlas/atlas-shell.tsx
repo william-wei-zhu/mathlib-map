@@ -72,6 +72,7 @@ export function AtlasShell({
   const isHierarchy = pathname === "/hierarchy";
   const usesOverlay = isDecl || isHierarchy; // routes whose payload is a full-canvas overlay
   const prevPath = useRef<string | null>(null);
+  const skipOpenRef = useRef(false); // set when navigation came from a zoom gesture, so the panel stays collapsed
 
   // Keep an overlay (theorem graph, structures diagram) in the visible map area, never behind the
   // panel: on desktop it starts to the right of the panel; on mobile the sheet is shortened and the
@@ -86,8 +87,10 @@ export function AtlasShell({
     const was = prevPath.current;
     prevPath.current = pathname;
     // Sync the panel to the route: collapse on home, open when diving in from the map, otherwise
-    // keep the user's manual choice (null = no change).
-    const next = pathname === "/" ? false : was === null || was === "/" ? true : null;
+    // keep the user's manual choice (null = no change). A zoom-gesture entry keeps it collapsed so
+    // the map stays visible; the user opens the panel manually.
+    let next = pathname === "/" ? false : was === null || was === "/" ? true : null;
+    if (skipOpenRef.current) { next = pathname === "/" ? false : null; skipOpenRef.current = false; }
     if (next !== null) setOpen(next);
   }, [pathname]);
 
@@ -193,8 +196,8 @@ export function AtlasShell({
           focusCode={focusCode}
           landmarks={landmarks}
           activeNode={activeNode}
-          onPick={(code) => router.push(areaHref(code))}
-          onNode={(name) => router.push(declHref(name))}
+          onPick={(code, viaZoom) => { if (viaZoom) skipOpenRef.current = true; router.push(areaHref(code)); }}
+          onNode={(name, viaZoom) => { if (viaZoom) skipOpenRef.current = true; router.push(declHref(name)); }}
           onExitFocus={() => router.push("/")}
         />
       ) : (
