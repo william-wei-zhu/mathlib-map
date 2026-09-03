@@ -201,6 +201,13 @@ export function AtlasCanvas({
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z) return;
+    // Zooming out (the minus button) at a focused region should step back up to the world once it
+    // reaches world scale, the same as a wheel/pinch zoom-out. Without this the button just shrinks
+    // the region and the user is stuck at the region level.
+    if (f < 1 && focusCode && scale * f < 1.35) {
+      onExitFocus?.();
+      return;
+    }
     select(svgEl).transition().duration(200).call(z.scaleBy, f);
   };
 
