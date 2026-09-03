@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { Neighbor } from "@/lib/atlas-data";
 
 export type GraphNode = {
@@ -25,14 +26,29 @@ function isDef(kind: string): boolean {
 export function TheoremGraph({
   node,
   onPick,
+  onDismiss,
   containerClassName = "inset-0",
 }: {
   node: GraphNode | null;
   onPick: (name: string) => void;
+  /** Leave the graph and step up one level (to the declaration's area). */
+  onDismiss?: () => void;
   /** Positions the overlay over the *visible* map area (outside the panel) so the graph is not
    *  half-hidden. Defaults to full-bleed. */
   containerClassName?: string;
 }) {
+  const wheelAcc = useRef(0);
+  // Scroll / pinch out to leave the graph (the map behind it is covered by this overlay, so its own
+  // zoom-out-to-exit cannot fire; we handle the gesture here). A decisive downward scroll dismisses.
+  const onWheel = (e: React.WheelEvent) => {
+    if (!onDismiss) return;
+    if (e.deltaY > 0) {
+      wheelAcc.current += e.deltaY;
+      if (wheelAcc.current > 90) { wheelAcc.current = 0; onDismiss(); }
+    } else {
+      wheelAcc.current = 0;
+    }
+  };
   if (!node) return null;
   const cx = VW / 2;
   const cy = VH / 2;
@@ -66,7 +82,18 @@ export function TheoremGraph({
   return (
     <div className={`pointer-events-none absolute z-10 ${containerClassName}`}>
       <div className="absolute inset-0 bg-background/55 backdrop-blur-[1px]" />
-      <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="xMidYMid meet" className="pointer-events-auto relative h-full w-full">
+      <svg
+        viewBox={`0 0 ${VW} ${VH}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="pointer-events-auto relative h-full w-full cursor-zoom-out"
+        onWheel={onWheel}
+        onClick={(e) => { if (e.target === e.currentTarget && onDismiss) onDismiss(); }}
+      >
+        {onDismiss && (
+          <text x={cx} y={26} textAnchor="middle" fontSize={11} letterSpacing="0.5" fill="var(--muted-foreground)" opacity={0.85} style={{ fontFamily: "var(--font-mono)" }}>
+            scroll out or click away to leave
+          </text>
+        )}
         <text x={cx} y={cy - 250} textAnchor="middle" fontSize={12} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
           {usedBy.length > 0 ? "CITED BY" : "CITED BY NOTHING YET"}
         </text>

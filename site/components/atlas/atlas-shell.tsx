@@ -203,7 +203,12 @@ export function AtlasShell({
         </div>
       )}
 
-      <TheoremGraph node={nodeData} onPick={(name) => router.push(declHref(name))} containerClassName={overlayInset} />
+      <TheoremGraph
+        node={nodeData}
+        onPick={(name) => router.push(declHref(name))}
+        onDismiss={() => router.push(focusCode ? areaHref(focusCode) : "/")}
+        containerClassName={overlayInset}
+      />
 
       {/* structures diagram renders here (portaled by HierarchyExplorer) over the faint map */}
       {isHierarchy && (
