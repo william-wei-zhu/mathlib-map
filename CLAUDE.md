@@ -211,8 +211,12 @@ this file is the running changelog of decisions taken while executing it.
     centre (`landmarkPositions`, matched to the drawn spiral). Zooming out reverses it: Region ->
     World past the world scale, and the minus button steps up too (it is a programmatic transition
     with no `sourceEvent`, so it is handled explicitly). Thresholds are deliberately high so a light
-    scroll magnifies the current level first; `scaleExtent` is `[1, 18]` for headroom. Guards
+    scroll magnifies the current level first; `scaleExtent` is `[1, 22]` for headroom. Guards
     (`enteringRef`/`exitingRef`) re-arm on focus/activeNode change so each jump fires once.
+    Thresholds are **device-aware** (via `pxPerUnit`): the mobile map renders ~3.5x smaller so the
+    same d3 `k` looks far less zoomed, so mobile enters a region past `k>7` (desktop 3.2) and a
+    theorem past `flownK*3` (desktop *2.1). A zoom-gesture entry passes `viaZoom` so the shell keeps
+    the panel collapsed (the map stays visible); a deliberate tap/search/link still opens it.
   - **Theorem graph is dismissable.** On `/decl` the SVG dependency graph covers the map and eats the
     scroll, so it handles its own gesture: scroll/pinch out or click the empty backdrop dismisses it
     and steps up to the declaration's area (`theorem-graph.tsx`, `onDismiss`).
