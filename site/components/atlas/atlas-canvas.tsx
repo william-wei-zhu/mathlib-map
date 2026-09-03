@@ -106,6 +106,8 @@ export function AtlasCanvas({
   const focusRef = useRef<string | null | undefined>(focusCode);
   const exitRef = useRef<(() => void) | undefined>(onExitFocus);
   const exitingRef = useRef(false);
+  const flownRef = useRef<string | null>(null); // the area we last flew to (guards against re-fly loops)
+  const prevKRef = useRef(1); // last zoom scale, to tell a zoom-out gesture from a zoom-in
   useEffect(() => { focusRef.current = focusCode; exitRef.current = onExitFocus; });
 
   const areas = useMemo(() => index.areas.filter((a) => a.declarations > 0), [index]);
@@ -144,9 +146,13 @@ export function AtlasCanvas({
       .on("zoom", (ev) => {
         g.attr("transform", ev.transform.toString());
         setScale(ev.transform.k);
-        // Zooming out of a focused region past ~the world scale returns to the world (higher level).
-        // Only user gestures have a sourceEvent, so the programmatic fly-in/reset never triggers it.
-        if (ev.sourceEvent && focusRef.current && !exitingRef.current && ev.transform.k < 1.25) {
+        // Zooming OUT of a focused region past ~the world scale returns to the world (higher level).
+        // Guards: only a user gesture (sourceEvent) that is actually zooming out, so the programmatic
+        // fly-in never triggers it and a zoom-in near the world scale does not eject the user.
+        const k = ev.transform.k;
+        const zoomingOut = k < prevKRef.current - 1e-4;
+        prevKRef.current = k;
+        if (ev.sourceEvent && zoomingOut && focusRef.current && !exitingRef.current && k < 1.25) {
           exitingRef.current = true;
           exitRef.current?.();
         }
@@ -167,13 +173,16 @@ export function AtlasCanvas({
     const k = Math.min(6, (Math.min(W, H) * 0.42) / p.r);
     const tx = W / 2 - k * p.x;
     const ty = H / 2 - k * p.y;
-    select(svgEl).transition().duration(600).call(z.transform, zoomIdentity.translate(tx, ty).scale(k));
+    // Apply the focus transform instantly. An animated transition launched around a route change
+    // gets interrupted by the re-render churn before it can paint, leaving the map stuck at the
+    // world scale, so we snap to the region instead of animating.
+    select(svgEl).call(z.transform, zoomIdentity.translate(tx, ty).scale(k));
   }, []);
   const reset = useCallback(() => {
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z) return;
-    select(svgEl).transition().duration(400).call(z.transform, zoomIdentity);
+    select(svgEl).call(z.transform, zoomIdentity);
   }, []);
   const zoomBy = (f: number) => {
     const svgEl = svgRef.current;
@@ -186,11 +195,19 @@ export function AtlasCanvas({
   useEffect(() => {
     exitingRef.current = false; // a new focus (or the world) re-arms the zoom-out-to-exit gesture
     if (!focusCode) {
+      flownRef.current = null;
       reset();
       return;
     }
+    // Fly to a focused area only once. The effect can re-run while focused (the shell updates
+    // landmarks etc.); re-calling flyTo would start a fresh transition that interrupts the previous
+    // one before it paints, so the map would never actually zoom in.
+    if (flownRef.current === focusCode) return;
     const p = placed.find((x) => x.area.code === focusCode);
-    if (p) flyTo(p);
+    if (p) {
+      flownRef.current = focusCode;
+      flyTo(p);
+    }
   }, [focusCode, placed, flyTo, reset]);
 
   return (
