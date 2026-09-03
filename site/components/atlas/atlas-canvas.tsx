@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useThemeMode } from "@/lib/use-theme-mode";
 import { select } from "d3-selection";
-import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
+import { zoom, zoomIdentity, zoomTransform, type ZoomBehavior } from "d3-zoom";
 import "d3-transition";
 import { Minus, Plus, Scan } from "lucide-react";
 import { coverage, fmt, pct, shortName, type AreaSummary, type MapIndex } from "@/lib/map-data";
@@ -74,6 +74,20 @@ function gridLayout(areas: AreaSummary[], maxDecl: number): Placed[] {
  * to and highlights an area, and `onPick` fires when a region is clicked so the shell can route to
  * that area. Wheel-zoom is disabled so the surrounding page can scroll; drag and buttons pan/zoom.
  */
+/** The area whose blob centre is nearest the middle of the current view, for zoom-in-to-enter.
+ *  Inverts the d3 transform: the viewBox centre maps back to the local point (W/2 - tx)/k, ... */
+function nearestRegion(placed: Placed[], k: number, tx: number, ty: number): string | null {
+  const px = (W / 2 - tx) / k;
+  const py = (H / 2 - ty) / k;
+  let best: string | null = null;
+  let bestD = Infinity;
+  for (const p of placed) {
+    const d = (p.x - px) ** 2 + (p.y - py) ** 2;
+    if (d < bestD) { bestD = d; best = p.area.code; }
+  }
+  return best;
+}
+
 export function AtlasCanvas({
   index,
   metric,
@@ -108,10 +122,15 @@ export function AtlasCanvas({
   // exit so a continuous wheel-out fires the route change only once.
   const focusRef = useRef<string | null | undefined>(focusCode);
   const exitRef = useRef<(() => void) | undefined>(onExitFocus);
+  const pickRef = useRef<((code: string) => void) | undefined>(onPick);
+  const nodeRef = useRef<((name: string) => void) | undefined>(onNode);
+  const placedRef = useRef<Placed[]>([]);
+  const landmarkPosRef = useRef<{ name: string; x: number; y: number }[]>([]);
   const exitingRef = useRef(false);
+  const enteringRef = useRef(false); // debounces the zoom-in-to-enter navigation
   const flownRef = useRef<string | null>(null); // the area we last flew to (guards against re-fly loops)
+  const flownKRef = useRef(1); // the scale we flew the focused region to (for zoom-in-to-theorem)
   const prevKRef = useRef(1); // last zoom scale, to tell a zoom-out gesture from a zoom-in
-  useEffect(() => { focusRef.current = focusCode; exitRef.current = onExitFocus; });
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
@@ -144,13 +163,38 @@ export function AtlasCanvas({
       }));
   }, [areas, maxDecl]);
 
+  // Positions of the focused region's landmark nodes (must mirror the spiral drawn below), so a
+  // zoom-in gesture can enter the theorem nearest the centre of the view.
+  const landmarkPositions = useMemo(() => {
+    const fp = focusCode ? placed.find((x) => x.area.code === focusCode) : null;
+    if (!fp) return [] as { name: string; x: number; y: number }[];
+    const shown = landmarks.slice(0, pxPerUnit < 0.5 ? 8 : 12);
+    return shown.map((lm, li) => {
+      const ang = li * 2.399963;
+      const rad = fp.r * 0.72 * Math.sqrt((li + 0.7) / shown.length);
+      return { name: lm.name, x: fp.x + Math.cos(ang) * rad, y: fp.y + Math.sin(ang) * rad + fp.r * 0.14 };
+    });
+  }, [focusCode, placed, landmarks, pxPerUnit]);
+
+  useEffect(() => {
+    focusRef.current = focusCode;
+    exitRef.current = onExitFocus;
+    pickRef.current = onPick;
+    nodeRef.current = onNode;
+    placedRef.current = placed;
+    landmarkPosRef.current = landmarkPositions;
+  });
+  // Re-arm the zoom gestures whenever the altitude changes (world / region / theorem). Keyed on both
+  // focusCode and activeNode because region -> theorem keeps the same focusCode.
+  useEffect(() => { exitingRef.current = false; enteringRef.current = false; }, [focusCode, activeNode]);
+
   useEffect(() => {
     const svgEl = svgRef.current;
     const gEl = gRef.current;
     if (!svgEl || !gEl) return;
     const g = select(gEl);
     const z = zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 8])
+      .scaleExtent([1, 18]) // headroom above the flown-in region scale so the user can zoom into a theorem
       .translateExtent([[0, 0], [W, H]])
       // Wheel-zoom is enabled: the shell is overflow-hidden, so there is no page scroll to protect,
       // and a Google-Maps-style map should zoom on the wheel. Only the right/middle mouse buttons
@@ -164,10 +208,29 @@ export function AtlasCanvas({
         // fly-in never triggers it and a zoom-in near the world scale does not eject the user.
         const k = ev.transform.k;
         const zoomingOut = k < prevKRef.current - 1e-4;
+        const zoomingIn = k > prevKRef.current + 1e-4;
         prevKRef.current = k;
-        if (ev.sourceEvent && zoomingOut && focusRef.current && !exitingRef.current && k < 1.25) {
-          exitingRef.current = true;
-          exitRef.current?.();
+        if (ev.sourceEvent && !exitingRef.current && !enteringRef.current) {
+          if (focusRef.current) {
+            // Zooming out of a region past the world scale returns to the world (higher level).
+            if (zoomingOut && k < 1.25) { exitingRef.current = true; exitRef.current?.(); }
+            // Zooming further into a region enters the theorem nearest the centre of the view.
+            else if (zoomingIn && k > flownKRef.current * 2.1 && landmarkPosRef.current.length) {
+              const px = (W / 2 - ev.transform.x) / k;
+              const py = (H / 2 - ev.transform.y) / k;
+              let best: string | null = null;
+              let bestD = Infinity;
+              for (const lm of landmarkPosRef.current) {
+                const d = (lm.x - px) ** 2 + (lm.y - py) ** 2;
+                if (d < bestD) { bestD = d; best = lm.name; }
+              }
+              if (best) { enteringRef.current = true; nodeRef.current?.(best); }
+            }
+          } else if (zoomingIn && k > 3.2) {
+            // Zooming into the world map enters the region nearest the centre of the view.
+            const code = nearestRegion(placedRef.current, k, ev.transform.x, ev.transform.y);
+            if (code) { enteringRef.current = true; pickRef.current?.(code); }
+          }
         }
       });
     const sel = select(svgEl);
@@ -184,6 +247,7 @@ export function AtlasCanvas({
     const z = zoomRef.current;
     if (!svgEl || !z) return;
     const k = Math.min(6, (Math.min(W, H) * 0.42) / p.r);
+    flownKRef.current = k;
     const tx = W / 2 - k * p.x;
     const ty = H / 2 - k * p.y;
     // Apply the focus transform instantly. An animated transition launched around a route change
@@ -201,19 +265,36 @@ export function AtlasCanvas({
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z) return;
-    // Zooming out (the minus button) at a focused region should step back up to the world once it
-    // reaches world scale, the same as a wheel/pinch zoom-out. Without this the button just shrinks
-    // the region and the user is stuck at the region level.
-    if (f < 1 && focusCode && scale * f < 1.35) {
+    // Minus button at a focused region: step back up to the world once it reaches world scale, the
+    // same as a wheel/pinch zoom-out (otherwise the button just shrinks the region in place).
+    if (f < 1 && focusCode && scale * f < 1.5) {
       onExitFocus?.();
       return;
+    }
+    // Plus button zooming in: enter the next level nearest the centre of the view (region from the
+    // world map, theorem from a region), the same as a wheel/pinch zoom-in.
+    if (f > 1) {
+      const t = zoomTransform(svgEl);
+      const px = (W / 2 - t.x) / t.k;
+      const py = (H / 2 - t.y) / t.k;
+      if (!focusCode && t.k * f > 3.2) {
+        const code = nearestRegion(placed, t.k, t.x, t.y);
+        if (code) { onPick?.(code); return; }
+      } else if (focusCode && t.k * f > flownKRef.current * 2.1 && landmarkPositions.length) {
+        let best: string | null = null;
+        let bestD = Infinity;
+        for (const lm of landmarkPositions) {
+          const d = (lm.x - px) ** 2 + (lm.y - py) ** 2;
+          if (d < bestD) { bestD = d; best = lm.name; }
+        }
+        if (best) { onNode?.(best); return; }
+      }
     }
     select(svgEl).transition().duration(200).call(z.scaleBy, f);
   };
 
   // React to the route: fly to the focused area, or reset when there is none.
   useEffect(() => {
-    exitingRef.current = false; // a new focus (or the world) re-arms the zoom-out-to-exit gesture
     if (!focusCode) {
       flownRef.current = null;
       reset();
@@ -234,7 +315,7 @@ export function AtlasCanvas({
   // rendered SVG scale), so landmark nodes and labels are a readable size on every device.
   const su = (px: number) => px / (scale * pxPerUnit);
   // Fewer landmarks on a small screen so the larger labels have room and do not overlap.
-  const maxLandmarks = pxPerUnit < 0.5 ? 8 : 16;
+  const maxLandmarks = pxPerUnit < 0.5 ? 8 : 12;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-card">
@@ -296,7 +377,7 @@ export function AtlasCanvas({
                 {isSel ? (
                   <>
                     {!activeNode && (
-                      <text x={p.x} y={p.y - p.r + su(26)} textAnchor="middle" fontWeight={600} fontSize={su(22)} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
+                      <text x={p.x} y={p.y - p.r + su(30)} textAnchor="middle" fontWeight={600} fontSize={su(28)} className={inkVar} style={{ fontFamily: "var(--font-display)" }}>
                         {shortName(a)}
                       </text>
                     )}
@@ -306,7 +387,7 @@ export function AtlasCanvas({
                       const nx = p.x + Math.cos(ang) * rad;
                       const ny = p.y + Math.sin(ang) * rad + p.r * 0.14;
                       const active = activeNode === lm.name;
-                      const rr = su(active ? 12 : 8.5) + su(Math.sqrt(lm.citedBy) / 7);
+                      const rr = su(active ? 15 : 11) + su(Math.sqrt(lm.citedBy) / 7);
                       const label = lm.name.split(".").pop() ?? lm.name;
                       return (
                         <g
@@ -322,7 +403,7 @@ export function AtlasCanvas({
                         >
                           {active && <circle cx={nx} cy={ny} r={rr + su(5)} fill="none" stroke={inkStroke} strokeWidth={su(1.8)} />}
                           <circle cx={nx} cy={ny} r={rr} fill={active ? "var(--accent-ink)" : "var(--background)"} stroke="var(--accent-ink)" strokeWidth={su(1.6)} />
-                          <text x={nx} y={ny - rr - su(6)} textAnchor="middle" fontSize={su(15)} fontWeight={active ? 600 : 400} fill={inkStroke} style={{ fontFamily: "var(--font-mono)" }}>
+                          <text x={nx} y={ny - rr - su(7)} textAnchor="middle" fontSize={su(21)} fontWeight={active ? 600 : 400} fill={inkStroke} style={{ fontFamily: "var(--font-mono)" }}>
                             {label}
                           </text>
                         </g>

@@ -52,18 +52,19 @@ export function TheoremGraph({
   if (!node) return null;
   const cx = VW / 2;
   const cy = VH / 2;
-  const uses = (node.uses ?? []).slice(0, 8);
-  const usedBy = (node.usedBy ?? []).slice(0, 6);
+  const uses = (node.uses ?? []).slice(0, 6);
+  const usedBy = (node.usedBy ?? []).slice(0, 5);
 
   const place = (list: Neighbor[], y: number) => {
     const n = Math.max(1, list.length);
-    const spread = Math.min(150, (VW - 200) / n);
+    const spread = Math.min(180, (VW - 160) / n);
     const start = cx - ((n - 1) / 2) * spread;
     return list.map((d, i) => ({ d, x: start + i * spread, y }));
   };
   const up = place(usedBy, cy - 210);
   const down = place(uses, cy + 210);
-  const short = (s: string) => s.split(".").pop() ?? s;
+  // Last dotted segment, truncated so the larger labels do not collide.
+  const short = (s: string) => { const last = s.split(".").pop() ?? s; return last.length > 13 ? last.slice(0, 12) + "…" : last; };
 
   const edge = (x: number, y: number, via: string, key: string) => (
     <path
@@ -77,7 +78,7 @@ export function TheoremGraph({
     />
   );
 
-  const nameW = Math.min(VW - 80, Math.max(150, node.name.length * 9.5 + 34));
+  const nameW = Math.min(VW - 60, Math.max(180, node.name.length * 12.5 + 44));
 
   return (
     <div className={`pointer-events-none absolute z-10 ${containerClassName}`}>
@@ -90,14 +91,14 @@ export function TheoremGraph({
         onClick={(e) => { if (e.target === e.currentTarget && onDismiss) onDismiss(); }}
       >
         {onDismiss && (
-          <text x={cx} y={26} textAnchor="middle" fontSize={11} letterSpacing="0.5" fill="var(--muted-foreground)" opacity={0.85} style={{ fontFamily: "var(--font-mono)" }}>
+          <text x={cx} y={24} textAnchor="middle" fontSize={15} letterSpacing="0.5" fill="var(--muted-foreground)" opacity={0.85} style={{ fontFamily: "var(--font-mono)" }}>
             scroll out or click away to leave
           </text>
         )}
-        <text x={cx} y={cy - 250} textAnchor="middle" fontSize={12} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+        <text x={cx} y={cy - 250} textAnchor="middle" fontSize={17} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
           {usedBy.length > 0 ? "CITED BY" : "CITED BY NOTHING YET"}
         </text>
-        <text x={cx} y={cy + 268} textAnchor="middle" fontSize={12} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+        <text x={cx} y={cy + 270} textAnchor="middle" fontSize={17} letterSpacing="1.5" fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
           {uses.length > 0 ? "CITES" : "RESTS ON AXIOMS"}
         </text>
 
@@ -105,7 +106,7 @@ export function TheoremGraph({
         {down.map(({ d, x, y }) => edge(x, y, d.via, "ed" + d.name))}
 
         {[...up, ...down].map(({ d, x, y }) => {
-          const r = 7 + Math.sqrt(d.citedBy) / 16;
+          const r = 10 + Math.sqrt(d.citedBy) / 14;
           return (
             <g
               key={d.name}
@@ -116,19 +117,19 @@ export function TheoremGraph({
               onClick={() => onPick(d.name)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(d.name); } }}
             >
-              <circle cx={x} cy={y} r={r} fill={isDef(d.kind) ? "var(--card)" : "var(--accent-ink)"} stroke="var(--accent-ink)" strokeWidth={1.5} />
-              <text x={x} y={y - r - 6} textAnchor="middle" fontSize={12.5} fill="var(--foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+              <circle cx={x} cy={y} r={r} fill={isDef(d.kind) ? "var(--card)" : "var(--accent-ink)"} stroke="var(--accent-ink)" strokeWidth={1.8} />
+              <text x={x} y={y - r - 8} textAnchor="middle" fontSize={18} fill="var(--foreground)" style={{ fontFamily: "var(--font-mono)" }}>
                 {short(d.name)}
               </text>
-              <text x={x} y={y + r + 15} textAnchor="middle" fontSize={10} fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
+              <text x={x} y={y + r + 22} textAnchor="middle" fontSize={13} fill="var(--muted-foreground)" style={{ fontFamily: "var(--font-mono)" }}>
                 {d.citedBy.toLocaleString()}
               </text>
             </g>
           );
         })}
 
-        <rect x={cx - nameW / 2} y={cy - 22} width={nameW} height={44} rx={22} fill="var(--foreground)" />
-        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={15} fill="var(--background)" style={{ fontFamily: "var(--font-mono)" }}>
+        <rect x={cx - nameW / 2} y={cy - 27} width={nameW} height={54} rx={27} fill="var(--foreground)" />
+        <text x={cx} y={cy + 7} textAnchor="middle" fontSize={21} fill="var(--background)" style={{ fontFamily: "var(--font-mono)" }}>
           {node.name}
         </text>
       </svg>
