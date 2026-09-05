@@ -1,5 +1,14 @@
 # Mathlib Map: project guide
 
+> **RETIRED 2026-09-05.** The project is shut down. The Vercel project `mathlib-map` was
+> deleted (production hosting gone). The GCP project `mathlibmap` was deleted (lifecycle
+> `DELETE_REQUESTED`, ~30-day undo via `gcloud projects undelete mathlibmap`), which removed
+> the `gs://mathlibmap-data` bucket (247 MiB, ~300K objects), the `mathlibmap-ci` service
+> account, and the Vertex AI usage. The GitHub repo is kept. The domain `mathlibmap.com`
+> stays registered under the Vercel account through Sep 2 2027 and will lapse unless renewed;
+> it no longer points at a live app. The pipeline/extractor/site code below is preserved for
+> reference and history only; nothing is deployed.
+
 **Mathlib Map** at [mathlibmap.com](https://mathlibmap.com). Tagline: "Every theorem in Mathlib, on the map."
 Three views over Lean's Mathlib, built on one data pipeline. Display labels are verbatim everywhere:
 **Map** (the frontier map, `/`), **Structures** (the typeclass hierarchy, `/hierarchy`), **Theorems**
